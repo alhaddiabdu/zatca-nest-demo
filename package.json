@@ -17,7 +17,8 @@
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:show": "npm run typeorm -- migration:show",
     "migration:generate": "npm run typeorm -- migration:generate",
-    "migration:create": "typeorm-ts-node-commonjs migration:create"
+    "migration:create": "typeorm-ts-node-commonjs migration:create",
+    "test:int": "jest -c jest.int.config.js --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
+    "@nestjs/testing": "^10.4.22",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.17.10",
     "@types/qrcode": "^1.5.5",

@@ -375,7 +375,7 @@
 - **رسالة الـ commit:** `feat(api): local fake ZATCA transport for development and tests`
 
 ### الخطوة 11: EnvironmentsService
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** قراءة صف الوضع وكتابته مع التشفير وحساب حالته.
 - **يعتمد على:** 6، 7
 - **الملفات:** `src/zatca/environments/environments.service.ts`، `environments.module.ts`، `test/int/environments.int-spec.ts`، `jest.int.config.js`، `package.json` (سكربت `test:int`)
