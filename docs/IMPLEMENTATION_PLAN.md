@@ -422,7 +422,7 @@
 - **رسالة الـ commit:** `feat(onboarding): persist onboarding and compliance checks in PostgreSQL`
 
 ### الخطوة 15: ChainService مع FOR UPDATE
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** حجز ICV/PIH وإدخال صف الفاتورة داخل transaction واحدة.
 - **يعتمد على:** 11
 - **الملفات:** `src/zatca/chain/chain.service.ts`، `test/int/chain.int-spec.ts`
