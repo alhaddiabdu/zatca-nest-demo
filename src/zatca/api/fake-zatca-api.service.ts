@@ -26,6 +26,8 @@ export class FakeZatcaApiService implements ZatcaApi, OnModuleDestroy {
   private readonly csrByRequestId = new Map<string, string>();
   /** عدد الاستدعاءات لكل دالة (للاختبارات) */
   readonly calls: Record<string, number> = {};
+  /** محاكاة توقف الهيئة: كل الإرسال يعود 503 حتى يُلغى (للاختبارات) */
+  private outage = false;
 
   constructor() {
     const key = join(this.caDir, 'ca.key');
@@ -35,6 +37,10 @@ export class FakeZatcaApiService implements ZatcaApi, OnModuleDestroy {
       '-subj', '/CN=Fake ZATCA Local CA/O=Local Development/C=SA', '-out', join(this.caDir, 'ca.pem'),
     ]);
     this.logger.warn('ZATCA_TRANSPORT=fake: لا اتصال بالهيئة، كل الردود محلية للتجربة فقط');
+  }
+
+  setOutage(on: boolean) {
+    this.outage = on;
   }
 
   onModuleDestroy() {
@@ -100,6 +106,9 @@ export class FakeZatcaApiService implements ZatcaApi, OnModuleDestroy {
 
   private submit(env: ZatcaEnv, path: string, body: SubmitBody, clearance: boolean): ZatcaResponse {
     const id = this.invoiceNumber(body);
+    if (this.outage) {
+      return this.reply(env, path, 503, { message: 'Service Unavailable (انقطاع تجريبي)' });
+    }
     if (id.includes('TIMEOUT')) {
       this.logger.warn(`[${env}] POST ${path} ← انقطاع اتصال تجريبي (${id})`);
       throw new ServiceUnavailableException('تعذر الاتصال بمنصة فاتورة: ETIMEDOUT (ناقل وهمي)');

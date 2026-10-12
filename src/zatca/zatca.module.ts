@@ -13,6 +13,7 @@ import { ModesModule } from './modes/modes.module';
 import { OnboardingService } from './onboarding.service';
 import { InvoiceService } from './invoice.service';
 import { ChainService } from './chain/chain.service';
+import { RetryService } from './submission/retry.service';
 import { ZatcaController } from './zatca.controller';
 
 @Module({
@@ -35,6 +36,7 @@ import { ZatcaController } from './zatca.controller';
     OnboardingService,
     InvoiceService,
     ChainService,
+    RetryService,
   ],
 })
 export class ZatcaModule {}

@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { envProfile } from './zatca.config';
 import { ZatcaApi } from './api/zatca-api.port';
-import { Credentials, EgsStoreService, PendingInvoice } from './storage/egs-store.service';
+import { Credentials, EgsStoreService } from './storage/egs-store.service';
 import { createSelfSignedCert, generateKeyAndCsr } from './crypto/csr';
 import { pemToCertBase64, tokenToCertBase64 } from './crypto/certificate';
 import { signInvoice } from './crypto/signer';
@@ -16,6 +16,7 @@ import { EnvironmentsService } from './environments/environments.service';
 import { ModeService } from './modes/mode.service';
 import { ChainService } from './chain/chain.service';
 import { outcomeFields, submitInvoice } from './submission/submit';
+import { RetryService } from './submission/retry.service';
 import { ZatcaEnvName } from '../database/entities/environment.entity';
 import { InvoiceEntity } from '../database/entities/invoice.entity';
 import { SellerInfo } from './zatca.config';
@@ -34,6 +35,7 @@ export class InvoiceService {
     private readonly environments: EnvironmentsService,
     private readonly modes: ModeService,
     private readonly chain: ChainService,
+    private readonly retry: RetryService,
     @InjectRepository(InvoiceEntity) private readonly invoices: Repository<InvoiceEntity>,
   ) {}
 
@@ -131,37 +133,13 @@ export class InvoiceService {
     };
   }
 
-  /** إعادة إرسال الفواتير المعلقة بسبب انقطاع الاتصال */
+  /** إعادة إرسال المعلّق في الوضع النشط الآن، بغض النظر عن موعد المحاولة التالية */
   async retryPending() {
-    return this.store.runExclusive(async () => {
-      const state = this.store.load();
-      const signer = await this.productionSigner(await this.modes.requireActive());
-      const remaining: PendingInvoice[] = [];
-      const results: unknown[] = [];
-      for (const p of state.pending ?? []) {
-        try {
-          const res = await this.submit(signer.env, p.category, signer.creds, {
-            invoiceHash: p.invoiceHash, uuid: p.uuid, invoice: p.xmlBase64,
-          });
-          results.push({ id: p.id, httpStatus: res.status, zatca: res.body });
-        } catch (err: any) {
-          remaining.push({ ...p, lastError: String(err?.message ?? err) });
-        }
-      }
-      state.pending = remaining;
-      this.store.save(state);
-      return { sent: results, stillPending: remaining.length };
-    });
+    const env = await this.modes.requireActive();
+    const summary = await this.retry.retryDue(env, { force: true });
+    // sent: للتوافق مع الواجهة الحالية
+    return { ...summary, sent: summary.results };
   }
-
-  private async submit(env: ZatcaEnvName, category: 'standard' | 'simplified', creds: Credentials, body: any) {
-    if (category === 'simplified') return this.api.report(env, creds, body);
-    const res = await this.api.clear(env, creds, body);
-    // 303 = الاعتماد معطّل مؤقتاً من الهيئة، فتُرسل القياسية عبر الإبلاغ
-    if (res.status === 303) return this.api.report(env, creds, body);
-    return res;
-  }
-
 
   /** المفتاح وشهادة الإنتاج للوضع النشط، من جدول environments */
   private async productionSigner(env: ZatcaEnvName) {

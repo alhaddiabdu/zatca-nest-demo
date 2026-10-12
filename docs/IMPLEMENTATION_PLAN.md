@@ -456,7 +456,7 @@
 - **رسالة الـ commit:** `feat(invoices): persist issued invoices and chain in PostgreSQL`
 
 ### الخطوة 18: إعادة إرسال المعلّق من القاعدة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** `POST /zatca/invoices/retry-pending` يعمل على الصفوف ولا يحذف المرفوض.
 - **يعتمد على:** 17
 - **الملفات:** `src/zatca/submission/retry.service.ts`، `src/zatca/invoice.service.ts`، `test/int/retry.int-spec.ts`
