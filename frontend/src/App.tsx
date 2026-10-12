@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from './api';
-import { CATEGORY_LABELS, formatDate, formatMoney, KIND_LABELS, MODE_COLORS, STATUS_LABELS, STATUS_TONES } from './format';
+import { MODE_COLORS } from './format';
 import { InvoiceForm, Prefill } from './InvoiceForm';
 import { InvoiceResult } from './InvoiceResult';
 import { Onboarding } from './Onboarding';
 import { CoreBanner, ModeBar } from './ModeBar';
 import { ModeSelect } from './ModeSelect';
 import { Dashboard } from './Dashboard';
+import { EMPTY_FILTERS, InvoiceTable, TableFilters } from './InvoiceTable';
 import { SettingsPage } from './SettingsPage';
 import { nextScreen, Screen } from './flow';
-import type { InvoicePayload, InvoiceSummary, IssueResult, Mode, Status } from './types';
+import type { InvoicePayload, InvoiceStatus, InvoiceSummary, IssueResult, Mode, Status } from './types';
 
 type Tab = 'overview' | 'invoice' | 'history' | 'settings' | 'onboard';
 
@@ -20,7 +21,9 @@ export function App() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [last, setLast] = useState<{ payload: InvoicePayload; result: IssueResult; dryRun: boolean } | null>(null);
-  const [history, setHistory] = useState<InvoiceSummary[]>([]);
+  const [tableFilters, setTableFilters] = useState<TableFilters>(EMPTY_FILTERS);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [retryMsg, setRetryMsg] = useState<string | null>(null);
@@ -52,33 +55,33 @@ export function App() {
     }
   }, []);
 
-  const loadHistory = useCallback(async () => {
-    try {
-      setHistory((await api.invoices({ includeDryRun: true, pageSize: 50 })).items);
-    } catch {
-      setHistory([]);
-    }
-  }, []);
+  /** يعيد تحميل جدول الفواتير */
+  const reloadTable = () => setReloadKey((k) => k + 1);
+
+  /** يفتح جدول الفواتير على حالة معيّنة */
+  const showInvoices = (status: InvoiceStatus | '' = '') => {
+    setTableFilters({ ...EMPTY_FILTERS, status });
+    setDetailsId(null);
+    setTab('history');
+  };
 
   useEffect(() => {
     resolveScreen();
   }, [resolveScreen]);
 
-  useEffect(() => {
-    if (screen === 'dashboard') loadHistory();
-  }, [screen, active, loadHistory]);
-
   const onModeSelected = (mode: Mode) => {
     setActive(mode);
     setLast(null);
     setTab('overview');
+    setTableFilters(EMPTY_FILTERS);
+    setDetailsId(null);
     resolveScreen();
   };
 
   const onIssued = (payload: InvoicePayload, result: IssueResult, dryRun: boolean) => {
     setLast({ payload, result, dryRun });
     refreshStatus();
-    loadHistory();
+    reloadTable();
   };
 
   const retryPending = async () => {
@@ -92,7 +95,7 @@ export function App() {
     } finally {
       setRetrying(false);
       refreshStatus();
-      loadHistory();
+      reloadTable();
     }
   };
 
@@ -147,7 +150,7 @@ export function App() {
         />
       )}
 
-      {screen === 'onboard' && <Onboarding status={status} onDone={resolveScreen} />}
+      {screen === 'onboard' && <Onboarding status={status} onDone={resolveScreen} onShowPending={() => showInvoices('PENDING')} />}
 
       {screen === 'dashboard' && status && (
         <>
@@ -155,7 +158,7 @@ export function App() {
             {([
               ['overview', 'نظرة عامة'],
               ['invoice', 'فاتورة جديدة'],
-              ['history', `الفواتير (${history.length})`],
+              ['history', 'الفواتير'],
               ['settings', 'الإعدادات'],
               ['onboard', 'التسجيل لدى الهيئة'],
             ] as [Tab, string][]).map(([t, label]) => (
@@ -172,7 +175,7 @@ export function App() {
                 onRetry={retryPending}
                 retrying={retrying}
                 retryMsg={retryMsg}
-                onShowStatus={() => setTab('history')}
+                onShowStatus={showInvoices}
               />
             )}
 
@@ -191,49 +194,28 @@ export function App() {
 
             {tab === 'settings' && active && <SettingsPage key={active} mode={active} onSaved={() => refreshStatus()} />}
 
-            {tab === 'onboard' && <Onboarding status={status} onDone={resolveScreen} />}
+            {tab === 'onboard' && <Onboarding status={status} onDone={resolveScreen} onShowPending={() => showInvoices('PENDING')} />}
 
             {tab === 'history' && (
-              <section className="card">
-                <div className="card-head">
-                  <h2>آخر الفواتير</h2>
-                  <button className="btn ghost small" onClick={loadHistory}>تحديث</button>
-                </div>
-                {history.length === 0 ? (
-                  <p className="hint">لا توجد فواتير بعد في هذا الوضع.</p>
-                ) : (
-                  <div className="table-wrap">
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>الرقم</th><th>النوع</th><th>الوثيقة</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {history.map((h) => (
-                          <tr key={h.id}>
-                            <td dir="ltr" className="mono">{h.invoiceNumber}</td>
-                            <td>{CATEGORY_LABELS[h.category]}</td>
-                            <td>{KIND_LABELS[h.kind]}</td>
-                            <td>{h.totalAmount != null ? formatMoney(h.totalAmount) : '—'}</td>
-                            <td><span className={`badge ${STATUS_TONES[h.status]}`}>{STATUS_LABELS[h.status]}</span></td>
-                            <td>{formatDate(h.createdAt)}</td>
-                            <td className="row-actions">
-                              <a href={api.xmlUrl(h.id)} target="_blank" rel="noreferrer">XML</a>
-                              {!h.isDryRun && h.kind === 'invoice' && h.status !== 'REJECTED' && (
-                                <>
-                                  <button className="link" onClick={() => issueNote(h, 'credit')}>إشعار دائن</button>
-                                  <button className="link" onClick={() => issueNote(h, 'debit')}>إشعار مدين</button>
-                                </>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+              <div className="stack">
+                <InvoiceTable
+                  filters={tableFilters}
+                  onFiltersChange={setTableFilters}
+                  reloadKey={reloadKey}
+                  selectedId={detailsId}
+                  onOpen={setDetailsId}
+                  onNote={issueNote}
+                />
+                {detailsId && (
+                  <section className="card">
+                    <div className="card-head">
+                      <h2>تفاصيل الفاتورة</h2>
+                      <button className="btn ghost small" onClick={() => setDetailsId(null)}>إغلاق</button>
+                    </div>
+                    <p className="hint mono" dir="ltr">{detailsId}</p>
+                  </section>
                 )}
-              </section>
+              </div>
             )}
           </main>
         </>

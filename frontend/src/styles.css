@@ -161,6 +161,18 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem
   .dashboard-cards, .status-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+/* ===== جدول الفواتير ===== */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.filters select, .filters input { min-width: 0; }
+.filter-date { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.85rem; }
+.filter-search { flex: 1 1 180px; }
+.filter-dry { align-items: center; font-size: 0.85rem; }
+.table tr.clickable { cursor: pointer; }
+.table tr.clickable:hover td { background: var(--surface-2); }
+.table tr.selected td { background: var(--primary-soft); }
+.row-note { color: var(--muted); }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
+
 /* ===== الحالة ===== */
 .status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .stat {

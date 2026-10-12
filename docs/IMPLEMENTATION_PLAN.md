@@ -611,7 +611,7 @@
 - **رسالة الـ commit:** `feat(web): dashboard with registration state and invoice counts`
 
 ### الخطوة 33: جدول الفواتير
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** جدول من الخادم مع الفلترة والترقيم.
 - **يعتمد على:** 32
 - **الملفات:** `frontend/src/InvoiceTable.tsx`، `frontend/src/App.tsx`
