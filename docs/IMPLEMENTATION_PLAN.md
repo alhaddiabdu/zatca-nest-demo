@@ -274,7 +274,7 @@
 - **رسالة الـ commit:** `chore: add guard against changes to frozen crypto/xml modules`
 
 ### الخطوة 2: خدمة PostgreSQL في docker-compose
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** تشغيل postgres:16 محلياً دون أن يعتمد عليه التطبيق بعد.
 - **يعتمد على:** 0
 - **الملفات:** `docker-compose.yml`، `.env.example`
