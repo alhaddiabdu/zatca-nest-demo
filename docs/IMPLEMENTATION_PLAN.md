@@ -284,7 +284,7 @@
 - **رسالة الـ commit:** `chore(docker): add postgres 16 service with healthcheck`
 
 ### الخطوة 3: تثبيت TypeORM والاتصال بالقاعدة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** يتصل التطبيق بالقاعدة عند الإقلاع، دون أي جداول بعد.
 - **يعتمد على:** 2
 - **الملفات:** `package.json`، `package-lock.json`، `src/database/database.module.ts`، `src/database/data-source.ts`، `src/app.module.ts`
