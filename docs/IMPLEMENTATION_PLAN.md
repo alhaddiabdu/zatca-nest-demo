@@ -561,7 +561,7 @@
 - **رسالة الـ commit:** `feat(web): mode selection screen with three cards`
 
 ### الخطوة 28: نافذة تأكيد الإنتاج
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** لا يُفعَّل الإنتاج إلا بكتابة CORE.
 - **يعتمد على:** 27
 - **الملفات:** `frontend/src/ConfirmCoreDialog.tsx`، `frontend/src/ModeSelect.tsx`

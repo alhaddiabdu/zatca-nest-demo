@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from './api';
+import { ConfirmCoreDialog } from './ConfirmCoreDialog';
 import { MODE_COLORS, MODE_DESCRIPTIONS, MODE_STATE_LABELS, MODE_STATE_TONES } from './format';
 import type { Mode, ModeInfo } from './types';
 
@@ -14,6 +15,7 @@ export function ModeSelect({ onSelected }: Props) {
   const [active, setActive] = useState<Mode | null>(null);
   const [busy, setBusy] = useState<Mode | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingCore, setConfirmingCore] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -31,6 +33,11 @@ export function ModeSelect({ onSelected }: Props) {
   }, [load]);
 
   const choose = async (mode: Mode) => {
+    // الإنتاج يمر بنافذة التأكيد
+    if (mode === 'core') {
+      setConfirmingCore(true);
+      return;
+    }
     setBusy(mode);
     setError(null);
     try {
@@ -76,8 +83,7 @@ export function ModeSelect({ onSelected }: Props) {
               <button
                 type="button"
                 className="btn primary mode-choose"
-                disabled={busy !== null || m.env === 'core'}
-                title={m.env === 'core' ? 'يتطلب تأكيداً بكتابة CORE' : undefined}
+                disabled={busy !== null}
                 onClick={() => choose(m.env)}
               >
                 {busy === m.env ? 'جارٍ التفعيل…' : 'اختيار'}
@@ -86,6 +92,15 @@ export function ModeSelect({ onSelected }: Props) {
           ))}
         </div>
       )}
+
+      <ConfirmCoreDialog
+        open={confirmingCore}
+        onCancel={() => setConfirmingCore(false)}
+        onConfirmed={() => {
+          setConfirmingCore(false);
+          onSelected('core');
+        }}
+      />
     </section>
   );
 }

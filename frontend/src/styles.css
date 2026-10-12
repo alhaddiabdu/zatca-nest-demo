@@ -134,6 +134,15 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem
   .mode-cards { grid-template-columns: 1fr; }
 }
 
+/* ===== نافذة التأكيد ===== */
+.confirm-dialog {
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; width: min(480px, calc(100vw - 32px));
+  background: var(--surface); color: var(--text); box-shadow: 0 10px 40px rgb(0 0 0 / 25%);
+}
+.confirm-dialog::backdrop { background: rgb(0 0 0 / 45%); }
+.confirm-dialog input[aria-invalid='true'] { outline: 2px solid var(--danger); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
 /* ===== الحالة ===== */
 .status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .stat {
@@ -229,6 +238,8 @@ input[dir='ltr'] { text-align: left; }
 .btn.primary:hover:not(:disabled) { background: var(--primary-hover); }
 .btn.ghost { background: var(--surface); color: var(--text); border-color: var(--border); align-self: flex-start; }
 .btn.ghost:hover { background: var(--surface-2); }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn.danger:hover:not(:disabled) { filter: brightness(0.92); }
 .btn.small { padding: 4px 12px; font-size: 0.85rem; }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
