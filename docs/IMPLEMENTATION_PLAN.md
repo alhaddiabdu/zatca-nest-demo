@@ -571,7 +571,7 @@
 - **رسالة الـ commit:** `feat(web): typed CORE confirmation before enabling production`
 
 ### الخطوة 29: صفحة إعدادات المنشأة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** تعديل بيانات البائع والـ EGS لكل وضع.
 - **يعتمد على:** 25
 - **الملفات:** `frontend/src/SettingsPage.tsx`، `frontend/src/styles.css`

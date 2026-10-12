@@ -197,6 +197,10 @@ input {
   border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0;
 }
 input:focus { outline: 2px solid var(--primary); outline-offset: -1px; background: var(--surface); }
+select { font: inherit; color: inherit; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.field.has-error input, .field.has-error select { border-color: var(--danger); }
+.field .field-error { color: var(--danger); }
+input:disabled, select:disabled { opacity: 0.65; cursor: not-allowed; }
 input[dir='ltr'] { text-align: left; }
 
 .hint { color: var(--muted); font-size: 0.88rem; margin: 0; }
