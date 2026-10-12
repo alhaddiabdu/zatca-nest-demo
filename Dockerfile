@@ -12,10 +12,9 @@ FROM node:20-alpine
 # openssl مطلوب لتوليد المفتاح الخاص و CSR (src/zatca/crypto/csr.ts)
 RUN apk add --no-cache openssl
 WORKDIR /app
-ENV NODE_ENV=production PORT=3000 DATA_DIR=/app/data
+ENV NODE_ENV=production PORT=3000
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./
-VOLUME /app/data
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

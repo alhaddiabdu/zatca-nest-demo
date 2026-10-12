@@ -521,7 +521,7 @@
 - **رسالة الـ commit:** `refactor: remove legacy JSON file storage`
 
 ### الخطوة 24: docker-compose للتطبيق مع القاعدة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** `docker compose up` يشغّل postgres ثم api بعد تطبيق الـ migrations.
 - **يعتمد على:** 23
 - **الملفات:** `docker-compose.yml`، `Dockerfile`، `src/database/database.module.ts`

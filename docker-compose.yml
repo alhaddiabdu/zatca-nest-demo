@@ -2,15 +2,19 @@ name: zatca-demo
 
 services:
   # خادم NestJS (الربط مع الهيئة)
+  # MASTER_KEY يُقرأ من .env، والتشغيل يتوقف إن لم يوجد
   api:
     build: .
     env_file: .env
     environment:
       PORT: 3000
-      DATA_DIR: /app/data
-    volumes:
-      # المفاتيح والشهادات والفواتير تبقى محفوظة حتى بعد إعادة تشغيل الحاوية
-      - zatca-data:/app/data
+      # داخل الشبكة: المضيف postgres والمنفذ 5432 (يتجاوز قيمة DATABASE_URL المحلية في .env)
+      DATABASE_URL: postgres://${POSTGRES_USER:-zatca}:${POSTGRES_PASSWORD:-zatca_dev_only}@postgres:5432/${POSTGRES_DB:-zatca}
+      # fake = لا اتصال بالهيئة (الافتراضي)، live = الاتصال الحقيقي
+      ZATCA_TRANSPORT: ${ZATCA_TRANSPORT:-fake}
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "3010:3000"
     restart: unless-stopped
@@ -24,7 +28,7 @@ services:
       - "8090:80"
     restart: unless-stopped
 
-  # قاعدة البيانات (لا يعتمد عليها api بعد)
+  # قاعدة البيانات: المفاتيح (مشفرة) والشهادات والسلسلة والفواتير
   postgres:
     image: postgres:16-alpine
     environment:
@@ -46,5 +50,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  zatca-data:
   pgdata:

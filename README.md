@@ -28,7 +28,9 @@ docker compose up -d --build
 
 - الواجهة: http://localhost:8090 (إصدار الفواتير، التسجيل لدى الهيئة، السجل)
 - الـ API مباشرة: http://localhost:3010/zatca/status
-- المفاتيح والشهادات والفواتير محفوظة في volume اسمه `zatca-demo_zatca-data`، فلا تضيع عند إعادة التشغيل.
+- البيانات في PostgreSQL (volume اسمه `zatca-demo_pgdata`)، والـ migrations تُطبَّق تلقائياً عند إقلاع api.
+- `MASTER_KEY` في `.env` إلزامي (`openssl rand -base64 32`) ويشفّر المفاتيح الخاصة في القاعدة. احفظ نسخة منه: ضياعه يعني إعادة التسجيل.
+- **ملاحظة:** الـ volume القديم `zatca-demo_zatca-data` (ملفات JSON) لم يعد مستخدماً. انقل بياناته أولاً بـ `npm run import:json`، ثم احذفه إن أردت: `docker volume rm zatca-demo_zatca-data`.
 - الإيقاف: `docker compose down` (أضف `-v` لحذف البيانات والبدء من الصفر).
 
 للتطوير المحلي بدون Docker: شغّل الخادم بـ `PORT=3010 npm run start:dev`، ثم `cd frontend && npm install && npm run dev` وافتح http://localhost:5180.
