@@ -329,7 +329,7 @@
 - **رسالة الـ commit:** `feat(db): add TypeORM entities matching migrations`
 
 ### الخطوة 7: خدمة التشفير
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** تشفير وفك AES-256-GCM مع AAD.
 - **يعتمد على:** 3
 - **الملفات:** `src/security/crypto-box.service.ts`، `src/security/security.module.ts`، `test/crypto-box.spec.ts`
