@@ -16,6 +16,12 @@ export const CERT_TEMPLATE_NAMES: Record<ZatcaEnv, string> = {
   core: 'ZATCA-Code-Signing',
 };
 
+/** عنوان الـ API واسم قالب الشهادة لوضع معيّن */
+export function envProfile(env: ZatcaEnv): { baseUrl: string; certTemplateName: string } {
+  if (!ZATCA_BASE_URLS[env]) throw new Error(`وضع غير معروف: ${env}`);
+  return { baseUrl: ZATCA_BASE_URLS[env], certTemplateName: CERT_TEMPLATE_NAMES[env] };
+}
+
 export interface SellerInfo {
   name: string;
   vatNumber: string;

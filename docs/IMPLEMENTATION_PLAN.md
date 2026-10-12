@@ -339,7 +339,7 @@
 - **رسالة الـ commit:** `feat(security): AES-256-GCM crypto box with AAD`
 
 ### الخطوة 8: التحقق من متغيرات البيئة عند الإقلاع
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** يتوقف التشغيل إذا لم يوجد `MASTER_KEY` صالح أو `DATABASE_URL`.
 - **يعتمد على:** 7
 - **الملفات:** `src/config/env.validation.ts`، `src/app.module.ts`، `src/zatca/zatca.config.ts`، `test/env.validation.spec.ts`
