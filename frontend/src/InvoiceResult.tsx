@@ -1,6 +1,6 @@
 import { api } from './api';
 import { formatMoney, STATUS_LABELS, STATUS_TONES } from './format';
-import type { InvoicePayload, IssueResult, ZatcaMessage } from './types';
+import type { InvoicePayload, IssueResult, ZatcaBody, ZatcaMessage } from './types';
 
 interface Props {
   payload: InvoicePayload;
@@ -13,11 +13,41 @@ function asList(m: ZatcaMessage[] | ZatcaMessage | undefined): ZatcaMessage[] {
   return Array.isArray(m) ? m : [m];
 }
 
-export function InvoiceResult({ payload, result, dryRun }: Props) {
-  const statusKey = dryRun ? 'DRY_RUN' : result.status ?? 'PENDING';
-  const v = result.zatca?.validationResults;
+/** أخطاء وتحذيرات الهيئة من validationResults */
+export function ZatcaMessages({ zatca }: { zatca?: ZatcaBody | null }) {
+  const v = zatca?.validationResults;
   const errors = asList(v?.errorMessages);
   const warnings = asList(v?.warningMessages);
+  return (
+    <>
+      {errors.length > 0 && (
+        <div className="alert danger">
+          <strong>أخطاء من الهيئة</strong>
+          <ul>{errors.map((m, i) => <li key={i}><code>{m.code}</code> {m.message}</li>)}</ul>
+        </div>
+      )}
+      {warnings.length > 0 && (
+        <div className="alert warning">
+          <strong>تحذيرات من الهيئة</strong>
+          <ul>{warnings.map((m, i) => <li key={i}><code>{m.code}</code> {m.message}</li>)}</ul>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** صورة رمز QR */
+export function QrFigure({ src, caption = 'رمز QR (يُطبع على الفاتورة)' }: { src: string; caption?: string }) {
+  return (
+    <figure className="qr">
+      <img src={src} alt="رمز QR للفاتورة" />
+      <figcaption>{caption}</figcaption>
+    </figure>
+  );
+}
+
+export function InvoiceResult({ payload, result, dryRun }: Props) {
+  const statusKey = dryRun ? 'DRY_RUN' : result.status ?? 'PENDING';
 
   return (
     <section className="card result">
@@ -30,10 +60,7 @@ export function InvoiceResult({ payload, result, dryRun }: Props) {
 
       <div className="result-body">
         {result.qrImage ? (
-          <figure className="qr">
-            <img src={result.qrImage} alt="رمز QR للفاتورة" />
-            <figcaption>رمز QR (يُطبع على الفاتورة)</figcaption>
-          </figure>
+          <QrFigure src={result.qrImage} />
         ) : (
           !dryRun && result.status && result.status !== 'REJECTED' && payload.category === 'standard' && (
             <p className="hint qr-note">في الفاتورة القياسية تضع الهيئة رمز QR داخل النسخة المعتمدة (XML).</p>
@@ -55,18 +82,7 @@ export function InvoiceResult({ payload, result, dryRun }: Props) {
         </dl>
       </div>
 
-      {errors.length > 0 && (
-        <div className="alert danger">
-          <strong>أخطاء من الهيئة</strong>
-          <ul>{errors.map((m, i) => <li key={i}><code>{m.code}</code> {m.message}</li>)}</ul>
-        </div>
-      )}
-      {warnings.length > 0 && (
-        <div className="alert warning">
-          <strong>تحذيرات من الهيئة</strong>
-          <ul>{warnings.map((m, i) => <li key={i}><code>{m.code}</code> {m.message}</li>)}</ul>
-        </div>
-      )}
+      <ZatcaMessages zatca={result.zatca} />
 
       <div className="actions">
         {result.xmlPath && (

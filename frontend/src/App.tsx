@@ -8,6 +8,7 @@ import { CoreBanner, ModeBar } from './ModeBar';
 import { ModeSelect } from './ModeSelect';
 import { Dashboard } from './Dashboard';
 import { EMPTY_FILTERS, InvoiceTable, TableFilters } from './InvoiceTable';
+import { InvoiceDetails } from './InvoiceDetails';
 import { SettingsPage } from './SettingsPage';
 import { nextScreen, Screen } from './flow';
 import type { InvoicePayload, InvoiceStatus, InvoiceSummary, IssueResult, Mode, Status } from './types';
@@ -206,15 +207,7 @@ export function App() {
                   onOpen={setDetailsId}
                   onNote={issueNote}
                 />
-                {detailsId && (
-                  <section className="card">
-                    <div className="card-head">
-                      <h2>تفاصيل الفاتورة</h2>
-                      <button className="btn ghost small" onClick={() => setDetailsId(null)}>إغلاق</button>
-                    </div>
-                    <p className="hint mono" dir="ltr">{detailsId}</p>
-                  </section>
-                )}
+                {detailsId && <InvoiceDetails key={detailsId} id={detailsId} onClose={() => setDetailsId(null)} />}
               </div>
             )}
           </main>

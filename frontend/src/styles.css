@@ -173,6 +173,9 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem
 .row-note { color: var(--muted); }
 .pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
 
+/* ===== تفاصيل الفاتورة ===== */
+.details pre.xml { max-height: 520px; white-space: pre; }
+
 /* ===== الحالة ===== */
 .status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .stat {

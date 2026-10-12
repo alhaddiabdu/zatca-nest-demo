@@ -621,7 +621,7 @@
 - **رسالة الـ commit:** `feat(web): server-backed invoice table with filters and pagination`
 
 ### الخطوة 34: تفاصيل الفاتورة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** عرض XML و QR ورد الهيئة لكل فاتورة.
 - **يعتمد على:** 33
 - **الملفات:** `frontend/src/InvoiceDetails.tsx`، `frontend/src/InvoiceResult.tsx`
