@@ -3,7 +3,7 @@ import { ConfigType } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import * as QRCode from 'qrcode';
 import zatcaConfig from './zatca.config';
-import { ZatcaApiService, ZatcaResponse } from './api/zatca-api.service';
+import { ZatcaApi, ZatcaResponse } from './api/zatca-api.port';
 import { Credentials, EgsState, EgsStoreService, PendingInvoice } from './storage/egs-store.service';
 import { createSelfSignedCert, generateKeyAndCsr } from './crypto/csr';
 import { pemToCertBase64, tokenToCertBase64 } from './crypto/certificate';
@@ -20,7 +20,7 @@ export class InvoiceService {
 
   constructor(
     @Inject(zatcaConfig.KEY) private readonly config: ConfigType<typeof zatcaConfig>,
-    private readonly api: ZatcaApiService,
+    private readonly api: ZatcaApi,
     private readonly store: EgsStoreService,
   ) {}
 

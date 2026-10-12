@@ -359,7 +359,7 @@
 - **رسالة الـ commit:** `refactor(api): pass target environment per ZATCA request`
 
 ### الخطوة 10: الناقل الوهمي FakeZatcaApiService
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** تجربة التسجيل والإرسال كاملين محلياً دون الاتصال بالهيئة.
 - **يعتمد على:** 9
 - **الملفات:** `src/zatca/api/zatca-api.port.ts` (واجهة مشتركة)، `src/zatca/api/fake-zatca-api.service.ts`، `src/zatca/zatca.module.ts`، `test/fake-zatca-api.spec.ts`

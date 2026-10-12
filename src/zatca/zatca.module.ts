@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import zatcaConfig from './zatca.config';
+import { ZatcaApi } from './api/zatca-api.port';
 import { ZatcaApiService } from './api/zatca-api.service';
+import { FakeZatcaApiService } from './api/fake-zatca-api.service';
 import { EgsStoreService } from './storage/egs-store.service';
 import { OnboardingService } from './onboarding.service';
 import { InvoiceService } from './invoice.service';
@@ -10,6 +12,17 @@ import { ZatcaController } from './zatca.controller';
 @Module({
   imports: [ConfigModule.forFeature(zatcaConfig)],
   controllers: [ZatcaController],
-  providers: [ZatcaApiService, EgsStoreService, OnboardingService, InvoiceService],
+  providers: [
+    {
+      // live = الاتصال الحقيقي بالهيئة، fake = ردود محلية (الافتراضي)
+      provide: ZatcaApi,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        config.get<string>('ZATCA_TRANSPORT') === 'live' ? new ZatcaApiService() : new FakeZatcaApiService(),
+    },
+    EgsStoreService,
+    OnboardingService,
+    InvoiceService,
+  ],
 })
 export class ZatcaModule {}

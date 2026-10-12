@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { ConfigType } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import zatcaConfig from './zatca.config';
-import { ZatcaApiService } from './api/zatca-api.service';
+import { ZatcaApi } from './api/zatca-api.port';
 import { EgsStoreService } from './storage/egs-store.service';
 import { generateKeyAndCsr } from './crypto/csr';
 import { tokenToCertBase64 } from './crypto/certificate';
@@ -19,7 +19,7 @@ export class OnboardingService {
 
   constructor(
     @Inject(zatcaConfig.KEY) private readonly config: ConfigType<typeof zatcaConfig>,
-    private readonly api: ZatcaApiService,
+    private readonly api: ZatcaApi,
     private readonly store: EgsStoreService,
   ) {}
 

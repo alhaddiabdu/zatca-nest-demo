@@ -1,26 +1,9 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { envProfile, ZatcaEnv } from '../zatca.config';
 import { Credentials } from '../storage/egs-store.service';
+import { CsidResponse, SubmitBody, ZatcaApi, ZatcaResponse } from './zatca-api.port';
 
-export interface CsidResponse {
-  requestID: number | string;
-  dispositionMessage: string;
-  binarySecurityToken: string;
-  secret: string;
-  errors?: unknown;
-}
-
-export interface SubmitBody {
-  invoiceHash: string;
-  uuid: string;
-  invoice: string; // XML بترميز Base64
-}
-
-export interface ZatcaResponse<T = any> {
-  status: number;
-  ok: boolean;
-  body: T;
-}
+export type { CsidResponse, SubmitBody, ZatcaResponse } from './zatca-api.port';
 
 /**
  * كل الاتصالات مع منصة فاتورة. كل دالة تأخذ الوضع (البيئة) المستهدف أولاً.
@@ -28,7 +11,7 @@ export interface ZatcaResponse<T = any> {
  *         303 الاعتماد غير مفعّل حالياً، أرسل الفاتورة القياسية عبر الإبلاغ
  */
 @Injectable()
-export class ZatcaApiService {
+export class ZatcaApiService implements ZatcaApi {
   private readonly logger = new Logger(ZatcaApiService.name);
 
   private async request<T>(
