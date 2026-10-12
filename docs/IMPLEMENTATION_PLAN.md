@@ -496,7 +496,7 @@
 - **رسالة الـ commit:** `feat(api): status endpoint with per-status counts`
 
 ### الخطوة 22: سكربت استيراد البيانات القديمة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** نقل `data/egs-*.json` إلى القاعدة مرة واحدة.
 - **يعتمد على:** 17
 - **الملفات:** `scripts/import-json-state.ts`، `package.json` (سكربت `import:json`)، `test/int/import.int-spec.ts`

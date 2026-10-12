@@ -18,7 +18,8 @@
     "migration:show": "npm run typeorm -- migration:show",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:create": "typeorm-ts-node-commonjs migration:create",
-    "test:int": "jest -c jest.int.config.js --runInBand"
+    "test:int": "jest -c jest.int.config.js --runInBand",
+    "import:json": "ts-node scripts/import-json-state.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
