@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { api, ApiError } from './api';
 import { ENV_LABELS, formatDate } from './format';
 import type { ComplianceCheck, OnboardResult, Status } from './types';
@@ -22,19 +22,24 @@ const DOC_LABELS: Record<string, string> = {
 interface Props {
   status: Status | null;
   onDone: () => void;
+  /** يفتح جدول الفواتير على المعلّقة (عند رفض إعادة التسجيل بسببها) */
+  onShowPending?: () => void;
 }
 
-export function Onboarding({ status, onDone }: Props) {
+/** أين يجد المستخدم OTP في كل وضع */
+const OTP_HINTS: Record<Status['env'], string> = {
+  'developer-portal': '',
+  simulation: 'استخرجه من بوابة فاتورة — بيئة المحاكاة (fatoora.zatca.gov.sa ← المحاكاة ← إضافة جهاز). صالح لدقائق فقط.',
+  core: 'استخرجه من بوابة فاتورة الرسمية (fatoora.zatca.gov.sa ← إضافة جهاز). صالح لدقائق فقط.',
+};
+
+export function Onboarding({ status, onDone, onShowPending }: Props) {
   const isDevPortal = status?.env === 'developer-portal';
-  const [otp, setOtp] = useState(isDevPortal ? '123345' : '');
+  const [otp, setOtp] = useState('');
   const [force, setForce] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<OnboardResult | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
-
-  useEffect(() => {
-    if (isDevPortal) setOtp((o) => o || '123345');
-  }, [isDevPortal]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,7 +47,8 @@ export function Onboarding({ status, onDone }: Props) {
     setError(null);
     setResult(null);
     try {
-      setResult(await api.onboard(otp, force));
+      // في بوابة المطورين لا نرسل OTP، فيرسل الخادم 123345 تلقائياً
+      setResult(await api.onboard(isDevPortal ? undefined : otp, force));
       setForce(false);
       onDone();
     } catch (err) {
@@ -53,6 +59,7 @@ export function Onboarding({ status, onDone }: Props) {
   };
 
   const failedChecks = (error?.body as { results?: ComplianceCheck[] } | null)?.results;
+  const errorCode = (error?.body as { code?: string } | null)?.code;
   const checks = result?.complianceChecks ?? failedChecks;
 
   return (
@@ -77,24 +84,27 @@ export function Onboarding({ status, onDone }: Props) {
         </ol>
 
         <div className="grid-2 align-end">
-          <label className="field">
-            <span>رمز OTP</span>
-            <input
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              required
-              pattern="\d{6}"
-              title="6 أرقام"
-              inputMode="numeric"
-              dir="ltr"
-              placeholder="000000"
-            />
-            <small>
-              {isDevPortal
-                ? 'في بوابة المطورين يعمل أي رمز من 6 أرقام.'
-                : 'استخرجه من بوابة فاتورة، وهو صالح لدقائق فقط.'}
-            </small>
-          </label>
+          {isDevPortal ? (
+            <div className="field">
+              <span>رمز OTP</span>
+              <p className="hint">في بوابة المطورين يُرسل الرمز <code dir="ltr">123345</code> تلقائياً، لا حاجة لإدخاله.</p>
+            </div>
+          ) : (
+            <label className="field">
+              <span>رمز OTP</span>
+              <input
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                required
+                pattern="\d{6}"
+                title="6 أرقام"
+                inputMode="numeric"
+                dir="ltr"
+                placeholder="000000"
+              />
+              <small>{status ? OTP_HINTS[status.env] : ''}</small>
+            </label>
+          )}
           <div className="field">
             {status?.onboarded && (
               <label className="toggle">
@@ -112,6 +122,11 @@ export function Onboarding({ status, onDone }: Props) {
         {error && (
           <div className="alert danger" role="alert">
             <strong>{error.message}</strong>
+            {errorCode === 'PENDING_EXISTS' && onShowPending && (
+              <button type="button" className="btn ghost small" onClick={onShowPending}>
+                عرض الفواتير المعلّقة
+              </button>
+            )}
             {error.body != null && typeof error.body === 'object' && !failedChecks && (
               <details>
                 <summary>التفاصيل</summary>

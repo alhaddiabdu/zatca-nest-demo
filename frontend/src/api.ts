@@ -73,7 +73,8 @@ export const api = {
     request<EnvSettings>(`/zatca/environments/${env}/settings`, json('PUT', body)),
   invoices: (query: InvoiceQuery = {}) => request<Page<InvoiceSummary>>(`/zatca/invoices${toQuery(query)}`),
   invoice: (id: string) => request<InvoiceDetail>(`/zatca/invoices/${encodeURIComponent(id)}`),
-  onboard: (otp: string, force: boolean) =>
+  /** otp اختياري في بوابة المطورين (يرسل الخادم 123345) */
+  onboard: (otp: string | undefined, force: boolean) =>
     request<OnboardResult>('/zatca/onboard', { method: 'POST', body: JSON.stringify({ otp, force }) }),
   issue: (payload: InvoicePayload, dryRun: boolean) =>
     request<IssueResult>(`/zatca/invoices${dryRun ? '?dryRun=true' : ''}`, {

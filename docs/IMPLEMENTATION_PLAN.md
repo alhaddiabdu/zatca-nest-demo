@@ -591,7 +591,7 @@
 - **رسالة الـ commit:** `feat(web): automatic flow from mode selection to dashboard`
 
 ### الخطوة 31: تطوير شاشة التسجيل
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** OTP تلقائي في بوابة المطورين، وطلب OTP في غيرها، ومنع إعادة التسجيل مع وجود معلّق.
 - **يعتمد على:** 30
 - **الملفات:** `frontend/src/Onboarding.tsx`
