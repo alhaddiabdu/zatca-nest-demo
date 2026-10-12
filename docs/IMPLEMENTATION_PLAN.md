@@ -641,7 +641,7 @@
 - **رسالة الـ commit:** `feat(web): mode-aware invoice form linked to invoice details`
 
 ### الخطوة 36: التوثيق
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** تحديث README و `.env.example` ليطابقا النظام الجديد.
 - **يعتمد على:** 24، 35
 - **الملفات:** `README.md`، `.env.example`
