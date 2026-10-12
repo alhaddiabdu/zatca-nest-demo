@@ -432,7 +432,7 @@
 - **رسالة الـ commit:** `feat(chain): transactional ICV/PIH reservation with row lock`
 
 ### الخطوة 16: دالة تصنيف ردود الهيئة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** دالة نقية واحدة تحدد الحالة وموعد إعادة المحاولة.
 - **يعتمد على:** —
 - **الملفات:** `src/zatca/submission/classify.ts`، `test/classify.spec.ts`
