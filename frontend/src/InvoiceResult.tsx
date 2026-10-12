@@ -70,7 +70,7 @@ export function InvoiceResult({ payload, result, dryRun }: Props) {
 
       <div className="actions">
         {result.xmlPath && (
-          <a className="btn ghost" href={api.xmlUrl(payload.id, dryRun)} target="_blank" rel="noreferrer">
+          <a className="btn ghost" href={(result.invoiceId ? api.xmlUrl(result.invoiceId) : api.xmlUrl(payload.id, { dryRun }))} target="_blank" rel="noreferrer">
             عرض XML الموقّع
           </a>
         )}

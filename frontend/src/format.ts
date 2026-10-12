@@ -1,9 +1,34 @@
-import type { Category, IssueStatus, Kind, Status } from './types';
+import type { Category, IssueStatus, Kind, Mode, ModeColor, ModeState } from './types';
 
-export const ENV_LABELS: Record<Status['env'], string> = {
+export const ENV_LABELS: Record<Mode, string> = {
   'developer-portal': 'بوابة المطورين',
   simulation: 'المحاكاة',
   core: 'الإنتاج',
+};
+
+/** لون كل وضع: أخضر للتجربة، برتقالي للمحاكاة، أحمر للإنتاج */
+export const MODE_COLORS: Record<Mode, ModeColor> = {
+  'developer-portal': 'green',
+  simulation: 'orange',
+  core: 'red',
+};
+
+export const MODE_DESCRIPTIONS: Record<Mode, string> = {
+  'developer-portal': 'تجربة حرة بإعدادات تجريبية جاهزة، و OTP يُرسل تلقائياً',
+  simulation: 'بيانات المنشأة الحقيقية دون أثر رسمي، و OTP من بوابة فاتورة (المحاكاة)',
+  core: 'فواتير رسمية تُرسل للهيئة، و OTP من بوابة فاتورة الرسمية',
+};
+
+export const MODE_STATE_LABELS: Record<ModeState, string> = {
+  unconfigured: 'غير مُعدّ',
+  configured: 'مُعدّ',
+  onboarded: 'مسجل',
+};
+
+export const MODE_STATE_TONES: Record<ModeState, string> = {
+  unconfigured: 'neutral',
+  configured: 'info',
+  onboarded: 'success',
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {

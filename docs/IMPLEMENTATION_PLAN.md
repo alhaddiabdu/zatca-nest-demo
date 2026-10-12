@@ -531,7 +531,7 @@
 - **رسالة الـ commit:** `chore(docker): run api against postgres with migrations on boot`
 
 ### الخطوة 25: أنواع وعميل API في الواجهة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** دعم الواجهات الجديدة في `types.ts` و `api.ts` دون تغيير الشاشات.
 - **يعتمد على:** 20، 21
 - **الملفات:** `frontend/src/types.ts`، `frontend/src/api.ts`، `frontend/src/format.ts`

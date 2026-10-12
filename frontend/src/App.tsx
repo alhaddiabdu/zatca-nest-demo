@@ -202,7 +202,7 @@ export function App() {
                         <td><span className={`badge ${STATUS_TONES[h.status]}`}>{STATUS_LABELS[h.status]}</span></td>
                         <td>{formatDate(h.issuedAt)}</td>
                         <td className="row-actions">
-                          <a href={api.xmlUrl(h.id, h.dryRun)} target="_blank" rel="noreferrer">XML</a>
+                          <a href={api.xmlUrl(h.id, { dryRun: h.dryRun })} target="_blank" rel="noreferrer">XML</a>
                           {!h.dryRun && h.kind === 'invoice' && h.status !== 'REJECTED' && (
                             <>
                               <button className="link" onClick={() => issueNote(h, 'credit')}>إشعار دائن</button>
