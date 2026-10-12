@@ -319,7 +319,7 @@
 - **رسالة الـ commit:** `feat(db): migration for invoices and compliance_checks`
 
 ### الخطوة 6: كيانات TypeORM
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** تعريف الكيانات الأربعة مطابقة للـ migrations دون استخدامها بعد.
 - **يعتمد على:** 5
 - **الملفات:** `src/database/entities/app-settings.entity.ts`، `environment.entity.ts`، `invoice.entity.ts`، `compliance-check.entity.ts`، `src/database/numeric.transformer.ts`، `src/database/database.module.ts`

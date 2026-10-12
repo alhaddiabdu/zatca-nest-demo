@@ -1,5 +1,12 @@
 import { join } from 'path';
 import { DataSourceOptions } from 'typeorm';
+import { AppSettingsEntity } from './entities/app-settings.entity';
+import { ComplianceCheckEntity } from './entities/compliance-check.entity';
+import { EnvironmentEntity } from './entities/environment.entity';
+import { InvoiceEntity } from './entities/invoice.entity';
+
+/** كل الكيانات، مسجّلة هنا لأن التطبيق وأداة الـ migrations يستخدمان نفس الإعدادات */
+export const ENTITIES = [EnvironmentEntity, AppSettingsEntity, InvoiceEntity, ComplianceCheckEntity];
 
 /**
  * إعدادات الاتصال المشتركة بين التطبيق وأداة سطر الأوامر (migrations).
@@ -16,6 +23,6 @@ export function buildDataSourceOptions(databaseUrl: string | undefined): DataSou
     migrationsRun: false,
     // ‎.ts عند التشغيل بـ ts-node، و ‎.js بعد البناء في dist
     migrations: [join(__dirname, 'migrations', '*.{ts,js}')],
-    entities: [],
+    entities: ENTITIES,
   };
 }
