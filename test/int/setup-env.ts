@@ -17,4 +17,6 @@ process.env.DATABASE_URL = url;
 process.env.MASTER_KEY = randomBytes(32).toString('base64');
 // لا اتصال بالهيئة أبداً في الاختبارات
 process.env.ZATCA_TRANSPORT = 'fake';
+// المُجدوِل لا يعمل وحده في الاختبارات؛ تُستدعى tick() يدوياً عند الحاجة
+process.env.RETRY_SCHEDULER_ENABLED = 'false';
 process.env.DATA_DIR = mkdtempSync(join(tmpdir(), 'zatca-int-data-'));

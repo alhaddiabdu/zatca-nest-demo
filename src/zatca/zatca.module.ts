@@ -14,6 +14,7 @@ import { OnboardingService } from './onboarding.service';
 import { InvoiceService } from './invoice.service';
 import { ChainService } from './chain/chain.service';
 import { RetryService } from './submission/retry.service';
+import { RetryScheduler } from './submission/retry.scheduler';
 import { ZatcaController } from './zatca.controller';
 
 @Module({
@@ -37,6 +38,7 @@ import { ZatcaController } from './zatca.controller';
     InvoiceService,
     ChainService,
     RetryService,
+    RetryScheduler,
   ],
 })
 export class ZatcaModule {}

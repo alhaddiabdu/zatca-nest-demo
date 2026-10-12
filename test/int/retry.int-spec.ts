@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { FakeZatcaApiService } from '../../src/zatca/api/fake-zatca-api.service';
 import { ZatcaApi } from '../../src/zatca/api/zatca-api.port';
 import { RetryService } from '../../src/zatca/submission/retry.service';
+import { RetryScheduler } from '../../src/zatca/submission/retry.scheduler';
 import { createTestApp } from './app';
 import { resetDatabase } from './helpers';
 
@@ -88,6 +89,21 @@ describe('Retrying PENDING invoices from PostgreSQL', () => {
     expect(a.attempted + b.attempted).toBe(4);
     const statuses = await ds.query(`select status, attempts from invoices where invoice_number like 'P-%'`);
     expect(statuses.every((s: { status: string; attempts: number }) => s.status === 'ACCEPTED' && s.attempts === 2)).toBe(true);
+  });
+
+  it('scheduler tick: a FAIL-then-recover invoice stays PENDING, then is accepted once due', async () => {
+    const scheduler = app.get(RetryScheduler);
+    process.env.RETRY_SCHEDULER_ENABLED = 'true';
+    try {
+      await issueDuringOutage(simplified('S-1'));
+      await scheduler.tick(); // لم يحن موعدها بعد
+      expect((await row('S-1')).status).toBe('PENDING');
+      await ds.query(`update invoices set next_retry_at = now() - interval '1 second' where invoice_number = 'S-1'`);
+      await scheduler.tick();
+      expect(await row('S-1')).toMatchObject({ status: 'ACCEPTED', attempts: 2 });
+    } finally {
+      process.env.RETRY_SCHEDULER_ENABLED = 'false';
+    }
   });
 
   it('dry runs are never sent', async () => {

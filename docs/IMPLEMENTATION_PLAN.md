@@ -466,7 +466,7 @@
 - **رسالة الـ commit:** `feat(retry): retry pending invoices from database without dropping rejections`
 
 ### الخطوة 19: الجدولة التلقائية
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** إعادة الإرسال كل 5 دقائق بتأخير تصاعدي.
 - **يعتمد على:** 18
 - **الملفات:** `src/zatca/submission/retry.scheduler.ts`، `src/zatca/zatca.module.ts`، `src/app.module.ts`، `test/retry.scheduler.spec.ts`

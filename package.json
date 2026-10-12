@@ -25,6 +25,7 @@
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.4.15",
     "@nestjs/platform-express": "^10.4.15",
+    "@nestjs/schedule": "^4.1.2",
     "@nestjs/typeorm": "^10.0.2",
     "@xmldom/xmldom": "^0.8.10",
     "class-transformer": "^0.5.1",
