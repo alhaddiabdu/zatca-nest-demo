@@ -1,0 +1,28 @@
+name: zatca-demo
+
+services:
+  # خادم NestJS (الربط مع الهيئة)
+  api:
+    build: .
+    env_file: .env
+    environment:
+      PORT: 3000
+      DATA_DIR: /app/data
+    volumes:
+      # المفاتيح والشهادات والفواتير تبقى محفوظة حتى بعد إعادة تشغيل الحاوية
+      - zatca-data:/app/data
+    ports:
+      - "3010:3000"
+    restart: unless-stopped
+
+  # واجهة React تُقدَّم عبر nginx، وتحوّل طلبات /zatca إلى api
+  web:
+    build: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "8090:80"
+    restart: unless-stopped
+
+volumes:
+  zatca-data:
