@@ -395,7 +395,7 @@
 - **رسالة الـ commit:** `feat(api): environment settings endpoints with strict validation`
 
 ### الخطوة 13: ModeService و endpoints الوضع
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** `GET /zatca/modes`، و `GET` و `PUT /zatca/mode` مع تأكيد CORE.
 - **يعتمد على:** 11
 - **الملفات:** `src/zatca/modes/mode.service.ts`، `modes.controller.ts`، `src/zatca/modes/active-env.ts`، `test/int/modes.int-spec.ts`

@@ -6,12 +6,13 @@ import { ZatcaApiService } from './api/zatca-api.service';
 import { FakeZatcaApiService } from './api/fake-zatca-api.service';
 import { EgsStoreService } from './storage/egs-store.service';
 import { EnvironmentsModule } from './environments/environments.module';
+import { ModesModule } from './modes/modes.module';
 import { OnboardingService } from './onboarding.service';
 import { InvoiceService } from './invoice.service';
 import { ZatcaController } from './zatca.controller';
 
 @Module({
-  imports: [ConfigModule.forFeature(zatcaConfig), EnvironmentsModule],
+  imports: [ConfigModule.forFeature(zatcaConfig), EnvironmentsModule, ModesModule],
   controllers: [ZatcaController],
   providers: [
     {

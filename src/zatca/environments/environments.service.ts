@@ -91,6 +91,12 @@ export class EnvironmentsService {
     return row;
   }
 
+  /** الأوضاع الثلاثة بالترتيب: بوابة المطورين، المحاكاة، الإنتاج */
+  async list(): Promise<EnvironmentEntity[]> {
+    const rows = await this.repo.find();
+    return ZATCA_ENVS.map((env) => rows.find((r) => r.env === env)).filter((r): r is EnvironmentEntity => !!r);
+  }
+
   async getSecrets(env: ZatcaEnvName): Promise<EnvSecrets> {
     const row = await this.get(env);
     const dec = (value: string | null, column: string) => (value ? this.box.decrypt(value, `${env}:${column}`) : null);
