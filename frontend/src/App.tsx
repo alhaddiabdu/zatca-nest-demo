@@ -6,16 +6,17 @@ import { InvoiceResult } from './InvoiceResult';
 import { Onboarding } from './Onboarding';
 import { CoreBanner, ModeBar } from './ModeBar';
 import { ModeSelect } from './ModeSelect';
+import { Dashboard } from './Dashboard';
 import { SettingsPage } from './SettingsPage';
 import { nextScreen, Screen } from './flow';
 import type { InvoicePayload, InvoiceSummary, IssueResult, Mode, Status } from './types';
 
-type Tab = 'invoice' | 'history' | 'settings' | 'onboard';
+type Tab = 'overview' | 'invoice' | 'history' | 'settings' | 'onboard';
 
 export function App() {
   const [screen, setScreen] = useState<Screen | null>(null);
   const [active, setActive] = useState<Mode | null>(null);
-  const [tab, setTab] = useState<Tab>('invoice');
+  const [tab, setTab] = useState<Tab>('overview');
   const [status, setStatus] = useState<Status | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [last, setLast] = useState<{ payload: InvoicePayload; result: IssueResult; dryRun: boolean } | null>(null);
@@ -70,7 +71,7 @@ export function App() {
   const onModeSelected = (mode: Mode) => {
     setActive(mode);
     setLast(null);
-    setTab('invoice');
+    setTab('overview');
     resolveScreen();
   };
 
@@ -150,34 +151,9 @@ export function App() {
 
       {screen === 'dashboard' && status && (
         <>
-          <section className="status">
-            <div className="stat">
-              <span>المنشأة</span>
-              <strong>{status.seller.name}</strong>
-              <small dir="ltr">{status.seller.vatNumber}</small>
-            </div>
-            <div className="stat">
-              <span>حالة الوحدة</span>
-              <strong className={status.onboarded ? 'ok' : 'muted'}>{status.onboarded ? 'مسجّلة ✓' : 'غير مسجّلة'}</strong>
-            </div>
-            <div className="stat">
-              <span>عدد الفواتير المُصدرة (ICV)</span>
-              <strong dir="ltr">{status.chain.icv}</strong>
-            </div>
-            <div className="stat">
-              <span>معلّقة للإرسال</span>
-              <strong dir="ltr">{status.pendingCount}</strong>
-              {status.pendingCount > 0 && (
-                <button className="link" onClick={retryPending} disabled={retrying}>
-                  {retrying ? 'جارٍ الإرسال…' : 'إعادة الإرسال'}
-                </button>
-              )}
-              {retryMsg && <small>{retryMsg}</small>}
-            </div>
-          </section>
-
           <nav className="tabs" role="tablist">
             {([
+              ['overview', 'نظرة عامة'],
               ['invoice', 'فاتورة جديدة'],
               ['history', `الفواتير (${history.length})`],
               ['settings', 'الإعدادات'],
@@ -190,6 +166,16 @@ export function App() {
           </nav>
 
           <main>
+            {tab === 'overview' && (
+              <Dashboard
+                status={status}
+                onRetry={retryPending}
+                retrying={retrying}
+                retryMsg={retryMsg}
+                onShowStatus={() => setTab('history')}
+              />
+            )}
+
             {tab === 'invoice' && (
               <div className="invoice-layout">
                 <InvoiceForm status={status} prefill={prefill} onIssued={onIssued} />

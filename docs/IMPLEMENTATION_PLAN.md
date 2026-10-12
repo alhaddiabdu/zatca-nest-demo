@@ -601,7 +601,7 @@
 - **رسالة الـ commit:** `feat(web): mode-aware onboarding with automatic developer OTP`
 
 ### الخطوة 32: لوحة التحكم
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** حالة التسجيل، وآخر ICV، والأعداد حسب الحالة، والمعلّق.
 - **يعتمد على:** 30، 21
 - **الملفات:** `frontend/src/Dashboard.tsx`، `frontend/src/App.tsx`، `frontend/src/styles.css`
