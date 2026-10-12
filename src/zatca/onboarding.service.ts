@@ -1,37 +1,70 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
-import { ConfigType } from '@nestjs/config';
-import { randomUUID } from 'crypto';
-import zatcaConfig from './zatca.config';
+import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { randomUUID, X509Certificate } from 'crypto';
+import { Repository } from 'typeorm';
+import { ComplianceCheckEntity } from '../database/entities/compliance-check.entity';
+import { ZatcaEnvName } from '../database/entities/environment.entity';
+import { InvoiceEntity } from '../database/entities/invoice.entity';
+import { envProfile, SellerInfo } from './zatca.config';
 import { ZatcaApi } from './api/zatca-api.port';
-import { EgsStoreService } from './storage/egs-store.service';
+import { Credentials, EgsStoreService } from './storage/egs-store.service';
+import { EnvironmentsService } from './environments/environments.service';
+import { ModeService } from './modes/mode.service';
 import { generateKeyAndCsr } from './crypto/csr';
-import { tokenToCertBase64 } from './crypto/certificate';
+import { certBase64ToPem, tokenToCertBase64 } from './crypto/certificate';
 import { INITIAL_PIH, signInvoice } from './crypto/signer';
 import { buildInvoiceXml, riyadhDateTime } from './xml/invoice-builder';
 import { DocumentKind, InvoiceCategory } from './xml/invoice.types';
 
+/** في بوابة المطورين يعمل أي OTP، فيُرسل هذا تلقائياً */
+export const DEVELOPER_PORTAL_OTP = '123345';
+
 /**
- * رحلة التسجيل (الخطوات 1 إلى 5) — مرة واحدة لكل جهاز/فرع.
+ * رحلة التسجيل (الخطوات 1 إلى 5) للوضع النشط — مرة واحدة لكل وضع.
+ * بيانات المنشأة والمفتاح والشهادات في جدول environments، والفحوصات في compliance_checks.
+ * مؤقتاً حتى الخطوة 17: السلسلة والمعلّق ما زالا في EgsStoreService (ملف JSON).
  */
 @Injectable()
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);
 
   constructor(
-    @Inject(zatcaConfig.KEY) private readonly config: ConfigType<typeof zatcaConfig>,
     private readonly api: ZatcaApi,
     private readonly store: EgsStoreService,
+    private readonly environments: EnvironmentsService,
+    private readonly modes: ModeService,
+    @InjectRepository(InvoiceEntity) private readonly invoices: Repository<InvoiceEntity>,
+    @InjectRepository(ComplianceCheckEntity) private readonly checks: Repository<ComplianceCheckEntity>,
   ) {}
 
-  async onboard(otp: string, force = false) {
+  async onboard(otp?: string, force = false) {
     return this.store.runExclusive(async () => {
-      const state = this.store.load();
-      if (state.production && !force) {
-        return { message: 'الوحدة مسجلة مسبقاً. أرسل force=true لإعادة التسجيل.', onboardedAt: state.onboardedAt };
+      const env = await this.modes.requireActive();
+      const row = await this.environments.get(env);
+
+      const missing = this.environments.missingSettings(row);
+      if (missing.length) {
+        throw new BadRequestException({ code: 'SETTINGS_INCOMPLETE', message: 'أكمل إعدادات المنشأة أولاً', missing });
+      }
+      if (row.productionTokenEnc && !force) {
+        return { message: 'الوحدة مسجلة مسبقاً. أرسل force=true لإعادة التسجيل.', env, onboardedAt: row.onboardedAt };
+      }
+      const pending = await this.invoices.count({ where: { env, status: 'PENDING' } });
+      if (pending > 0) {
+        throw new ConflictException({
+          code: 'PENDING_EXISTS',
+          message: `توجد ${pending} فواتير معلّقة في هذا الوضع. أرسلها أولاً قبل إعادة التسجيل.`,
+          pending,
+        });
+      }
+      const otpToSend = otp || (env === 'developer-portal' ? DEVELOPER_PORTAL_OTP : undefined);
+      if (!otpToSend) {
+        throw new BadRequestException({ code: 'OTP_REQUIRED', message: 'أدخل رمز OTP من بوابة فاتورة' });
       }
 
       // 1) المفتاح الخاص + CSR
-      const { seller, egs } = this.config;
+      const seller = this.environments.toSeller(row);
+      const egs = this.environments.toEgs(row);
       const csr = generateKeyAndCsr({
         commonName: egs.commonName,
         orgUnit: egs.orgUnit,
@@ -43,58 +76,69 @@ export class OnboardingService {
         invoiceType: egs.invoiceType,
         location: egs.location,
         industry: egs.industry,
-        certTemplateName: this.config.certTemplateName,
+        certTemplateName: envProfile(env).certTemplateName,
       });
-      this.logger.log('1) تم توليد المفتاح الخاص و CSR');
+      this.logger.log(`[${env}] 1) تم توليد المفتاح الخاص و CSR`);
 
       // 2+3) OTP ← شهادة الامتثال
-      const ccsid = await this.api.requestComplianceCsid(this.config.env, csr.csrBase64, otp);
+      const ccsid = await this.api.requestComplianceCsid(env, csr.csrBase64, otpToSend);
       if (!ccsid.ok) throw new BadRequestException({ step: 'compliance-csid', zatca: ccsid });
-      const compliance = {
+      const compliance: Credentials = {
         binarySecurityToken: ccsid.body.binarySecurityToken,
         secret: ccsid.body.secret,
         requestId: String(ccsid.body.requestID),
       };
-      this.logger.log(`3) تم استلام شهادة الامتثال (requestID=${compliance.requestId})`);
+      this.logger.log(`[${env}] 3) تم استلام شهادة الامتثال (requestID=${compliance.requestId})`);
 
-      // 4) فحوصات الامتثال: كل الأنواع المذكورة في EGS_INVOICE_TYPE
-      const checks = await this.runComplianceChecks(csr.privateKeyPem, compliance);
-      const failed = checks.filter((c) => !c.ok);
-      if (failed.length) {
-        throw new BadRequestException({ step: 'compliance-checks', results: checks });
+      // 4) فحوصات الامتثال: كل الأنواع المذكورة في نوع الفواتير (مثل 1100)
+      const runId = randomUUID();
+      const checks = await this.runComplianceChecks(env, runId, seller, egs.invoiceType, csr.privateKeyPem, compliance);
+      if (checks.some((c) => !c.ok)) {
+        throw new BadRequestException({ step: 'compliance-checks', runId, results: checks });
       }
-      this.logger.log(`4) نجحت فحوصات الامتثال (${checks.length} وثائق)`);
+      this.logger.log(`[${env}] 4) نجحت فحوصات الامتثال (${checks.length} وثائق)`);
 
       // 5) شهادة الإنتاج
-      const pcsid = await this.api.requestProductionCsid(this.config.env, compliance);
+      const pcsid = await this.api.requestProductionCsid(env, compliance);
       if (!pcsid.ok) throw new BadRequestException({ step: 'production-csid', zatca: pcsid });
-      this.logger.log('5) تم استلام شهادة الإنتاج ✔');
+      const production: Credentials = {
+        binarySecurityToken: pcsid.body.binarySecurityToken,
+        secret: pcsid.body.secret,
+        requestId: String(pcsid.body.requestID),
+      };
+      this.logger.log(`[${env}] 5) تم استلام شهادة الإنتاج ✔`);
 
-      this.store.save({
+      // إعادة التسجيل تبدأ سلسلة جديدة برقم دورة جديد
+      const chainEpoch = row.productionTokenEnc ? row.chainEpoch + 1 : row.chainEpoch;
+      await this.environments.saveCredentials(env, {
         privateKeyPem: csr.privateKeyPem,
         csrPem: csr.csrPem,
         compliance,
-        production: {
-          binarySecurityToken: pcsid.body.binarySecurityToken,
-          secret: pcsid.body.secret,
-          requestId: String(pcsid.body.requestID),
-        },
-        chain: { icv: 0, pih: INITIAL_PIH },
-        onboardedAt: new Date().toISOString(),
+        production,
+        productionCertNotAfter: this.certNotAfter(production.binarySecurityToken),
+        onboardedAt: new Date(),
+        chain: { chainEpoch, icv: 0, pih: INITIAL_PIH },
       });
+      // مؤقتاً حتى الخطوة 17: إصدار الفواتير ما زال يقرأ السلسلة من ملف JSON
+      const legacy = this.store.load();
+      legacy.chain = { icv: 0, pih: INITIAL_PIH };
+      this.store.save(legacy);
 
-      return { message: 'تم التسجيل بنجاح، يمكنك الآن إرسال الفواتير', env: this.config.env, complianceChecks: checks };
+      return { message: 'تم التسجيل بنجاح، يمكنك الآن إرسال الفواتير', env, runId, complianceChecks: checks };
     });
   }
 
   private async runComplianceChecks(
+    env: ZatcaEnvName,
+    runId: string,
+    seller: SellerInfo,
+    invoiceType: string,
     privateKeyPem: string,
-    creds: { binarySecurityToken: string; secret: string },
+    creds: Credentials,
   ) {
-    const type = this.config.egs.invoiceType; // مثل 1100
     const categories: InvoiceCategory[] = [];
-    if (type[0] === '1') categories.push('standard');
-    if (type[1] === '1') categories.push('simplified');
+    if (invoiceType[0] === '1') categories.push('standard');
+    if (invoiceType[1] === '1') categories.push('simplified');
     const kinds: DocumentKind[] = ['invoice', 'credit', 'debit'];
 
     const certBase64 = tokenToCertBase64(creds.binarySecurityToken);
@@ -129,30 +173,53 @@ export class OnboardingService {
             originalInvoiceId: kind === 'invoice' ? undefined : 'COMPLIANCE-1',
             reason: kind === 'invoice' ? undefined : 'تعديل على الفاتورة',
           },
-          this.config.seller,
+          seller,
         );
         const signed = signInvoice({ unsignedXml: built.unsignedXml, privateKeyPem, certBase64, qrFields: built.qrFields });
-        const res = await this.api.complianceCheck(this.config.env, creds, {
+        const res = await this.api.complianceCheck(env, creds, {
           invoiceHash: signed.invoiceHash,
           uuid,
           invoice: Buffer.from(signed.signedXml, 'utf8').toString('base64'),
         });
-        results.push({ document: `${category}-${kind}`, status: res.status, ok: res.ok, response: res.body });
+        const document = `${category}-${kind}`;
+        results.push({ document, status: res.status, ok: res.ok, response: res.body });
+        await this.checks.save(this.checks.create({
+          env,
+          runId,
+          document,
+          icv,
+          uuid,
+          invoiceHash: signed.invoiceHash,
+          httpStatus: res.status,
+          ok: res.ok,
+          response: (res.body ?? null) as Record<string, unknown> | null,
+        }));
         pih = signed.invoiceHash;
       }
     }
     return results;
   }
 
-  status() {
-    const s = this.store.load();
+  private certNotAfter(binarySecurityToken: string): Date | null {
+    try {
+      return new Date(new X509Certificate(certBase64ToPem(tokenToCertBase64(binarySecurityToken))).validTo);
+    } catch {
+      return null;
+    }
+  }
+
+  async status() {
+    const env = await this.modes.requireActive();
+    const row = await this.environments.get(env);
+    // مؤقتاً حتى الخطوة 17: السلسلة والمعلّق من ملف JSON
+    const legacy = this.store.load();
     return {
-      env: this.config.env,
-      seller: this.config.seller,
-      onboarded: !!s.production,
-      onboardedAt: s.onboardedAt ?? null,
-      chain: s.chain,
-      pendingCount: s.pending?.length ?? 0,
+      env,
+      seller: this.environments.toSeller(row),
+      onboarded: !!row.productionTokenEnc,
+      onboardedAt: row.onboardedAt ?? null,
+      chain: legacy.chain,
+      pendingCount: legacy.pending?.length ?? 0,
     };
   }
 }

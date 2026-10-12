@@ -405,7 +405,7 @@
 - **رسالة الـ commit:** `feat(api): operating mode selection with CORE confirmation`
 
 ### الخطوة 14: ربط التسجيل بقاعدة البيانات
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** `POST /zatca/onboard` يعمل على الوضع النشط ويحفظ في القاعدة.
 - **يعتمد على:** 10، 12، 13
 - **الملفات:** `src/zatca/onboarding.service.ts`، `src/zatca/invoice.service.ts` (`productionSigner` و `localSigner` فقط)، `src/zatca/dto/create-invoice.dto.ts` (`otp` اختياري)، `test/int/onboarding.int-spec.ts`

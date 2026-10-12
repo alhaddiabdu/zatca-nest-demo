@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { ConfigType } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import * as QRCode from 'qrcode';
-import zatcaConfig from './zatca.config';
+import zatcaConfig, { envProfile } from './zatca.config';
 import { ZatcaApi, ZatcaResponse } from './api/zatca-api.port';
 import { Credentials, EgsState, EgsStoreService, PendingInvoice } from './storage/egs-store.service';
 import { createSelfSignedCert, generateKeyAndCsr } from './crypto/csr';
@@ -10,6 +10,9 @@ import { pemToCertBase64, tokenToCertBase64 } from './crypto/certificate';
 import { signInvoice } from './crypto/signer';
 import { buildInvoiceXml, riyadhDateTime } from './xml/invoice-builder';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { EnvironmentsService } from './environments/environments.service';
+import { ModeService } from './modes/mode.service';
+import { ZatcaEnvName } from '../database/entities/environment.entity';
 
 /**
  * دورة حياة كل فاتورة (الخطوات 6 إلى 11).
@@ -22,12 +25,14 @@ export class InvoiceService {
     @Inject(zatcaConfig.KEY) private readonly config: ConfigType<typeof zatcaConfig>,
     private readonly api: ZatcaApi,
     private readonly store: EgsStoreService,
+    private readonly environments: EnvironmentsService,
+    private readonly modes: ModeService,
   ) {}
 
   async issue(dto: CreateInvoiceDto, dryRun = false) {
     return this.store.runExclusive(async () => {
       const state = this.store.load();
-      const signer = dryRun ? this.localSigner(state) : this.productionSigner(state);
+      const signer = dryRun ? await this.localSigner() : await this.productionSigner();
 
       // 6) بناء XML برقم العداد التالي وتجزئة الفاتورة السابقة
       const icv = state.chain.icv + 1;
@@ -74,7 +79,7 @@ export class InvoiceService {
       };
       let res: ZatcaResponse;
       try {
-        res = await this.submit(dto.category, signer.creds, body);
+        res = await this.submit(signer.env, dto.category, signer.creds, body);
       } catch (err: any) {
         // انقطاع الاتصال: نحفظها لإعادة المحاولة (المبسطة يجب أن تصل خلال 24 ساعة)
         this.addPending(state, {
@@ -104,12 +109,12 @@ export class InvoiceService {
   async retryPending() {
     return this.store.runExclusive(async () => {
       const state = this.store.load();
-      const signer = this.productionSigner(state);
+      const signer = await this.productionSigner();
       const remaining: PendingInvoice[] = [];
       const results: unknown[] = [];
       for (const p of state.pending ?? []) {
         try {
-          const res = await this.submit(p.category, signer.creds, {
+          const res = await this.submit(signer.env, p.category, signer.creds, {
             invoiceHash: p.invoiceHash, uuid: p.uuid, invoice: p.xmlBase64,
           });
           results.push({ id: p.id, httpStatus: res.status, zatca: res.body });
@@ -123,11 +128,11 @@ export class InvoiceService {
     });
   }
 
-  private async submit(category: 'standard' | 'simplified', creds: Credentials, body: any) {
-    if (category === 'simplified') return this.api.report(this.config.env, creds, body);
-    const res = await this.api.clear(this.config.env, creds, body);
+  private async submit(env: ZatcaEnvName, category: 'standard' | 'simplified', creds: Credentials, body: any) {
+    if (category === 'simplified') return this.api.report(env, creds, body);
+    const res = await this.api.clear(env, creds, body);
     // 303 = الاعتماد معطّل مؤقتاً من الهيئة، فتُرسل القياسية عبر الإبلاغ
-    if (res.status === 303) return this.api.report(this.config.env, creds, body);
+    if (res.status === 303) return this.api.report(env, creds, body);
     return res;
   }
 
@@ -136,32 +141,41 @@ export class InvoiceService {
     this.store.save(state);
   }
 
-  private productionSigner(state: EgsState) {
-    if (!state.production || !state.privateKeyPem) {
+  /** المفتاح وشهادة الإنتاج للوضع النشط، من جدول environments */
+  private async productionSigner() {
+    const env = await this.modes.requireActive();
+    const secrets = await this.environments.getSecrets(env);
+    if (!secrets.production || !secrets.privateKeyPem) {
       throw new BadRequestException('الوحدة غير مسجلة. نفّذ POST /zatca/onboard أولاً، أو استخدم ?dryRun=true للتجربة.');
     }
     return {
-      creds: state.production,
-      privateKeyPem: state.privateKeyPem,
-      certBase64: tokenToCertBase64(state.production.binarySecurityToken),
+      env,
+      creds: secrets.production,
+      privateKeyPem: secrets.privateKeyPem,
+      certBase64: tokenToCertBase64(secrets.production.binarySecurityToken),
     };
   }
 
-  private localSigner(state: EgsState) {
-    if (!state.localTest) {
+  /** شهادة ذاتية التوقيع للتجربة (dryRun)، تُنشأ مرة لكل وضع وتُحفظ مشفرة */
+  private async localSigner() {
+    const env = await this.modes.requireActive();
+    let local = (await this.environments.getSecrets(env)).localTest;
+    if (!local) {
+      const seller = this.environments.toSeller(await this.environments.get(env));
       const { privateKeyPem } = generateKeyAndCsr({
-        commonName: 'local-test', orgUnit: 'test', orgName: 'test', vatNumber: this.config.seller.vatNumber,
+        commonName: 'local-test', orgUnit: 'test', orgName: 'test', vatNumber: seller.vatNumber || '399999999900003',
         solutionName: 'test', model: 'test', serial: 'test', invoiceType: '1100', location: 'test',
-        industry: 'test', certTemplateName: this.config.certTemplateName,
+        industry: 'test', certTemplateName: envProfile(env).certTemplateName,
       });
-      state.localTest = { privateKeyPem, certPem: createSelfSignedCert(privateKeyPem) };
-      this.store.save(state);
-      this.logger.log('تم إنشاء شهادة محلية للتجربة (dryRun)');
+      local = { privateKeyPem, certPem: createSelfSignedCert(privateKeyPem) };
+      await this.environments.saveLocalTest(env, local);
+      this.logger.log(`[${env}] تم إنشاء شهادة محلية للتجربة (dryRun)`);
     }
     return {
+      env,
       creds: null as unknown as Credentials,
-      privateKeyPem: state.localTest.privateKeyPem,
-      certBase64: pemToCertBase64(state.localTest.certPem),
+      privateKeyPem: local.privateKeyPem,
+      certBase64: pemToCertBase64(local.certPem),
     };
   }
 }

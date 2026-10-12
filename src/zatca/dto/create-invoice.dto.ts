@@ -37,7 +37,7 @@ export class CreateInvoiceDto {
 }
 
 export class OnboardDto {
-  /** في بوابة المطورين يعمل أي رقم مثل 123345. في المحاكاة والإنتاج يُستخرج من بوابة فاتورة */
-  @Matches(/^\d{6}$/, { message: 'رمز OTP من 6 أرقام' }) otp: string;
+  /** اختياري في بوابة المطورين (يُرسل 123345 تلقائياً). في المحاكاة والإنتاج يُستخرج من بوابة فاتورة */
+  @IsOptional() @Matches(/^\d{6}$/, { message: 'رمز OTP من 6 أرقام' }) otp?: string;
   @IsOptional() force?: boolean;
 }

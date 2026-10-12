@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ComplianceCheckEntity } from '../database/entities/compliance-check.entity';
+import { InvoiceEntity } from '../database/entities/invoice.entity';
 import zatcaConfig from './zatca.config';
 import { ZatcaApi } from './api/zatca-api.port';
 import { ZatcaApiService } from './api/zatca-api.service';
@@ -12,7 +15,12 @@ import { InvoiceService } from './invoice.service';
 import { ZatcaController } from './zatca.controller';
 
 @Module({
-  imports: [ConfigModule.forFeature(zatcaConfig), EnvironmentsModule, ModesModule],
+  imports: [
+    ConfigModule.forFeature(zatcaConfig),
+    TypeOrmModule.forFeature([InvoiceEntity, ComplianceCheckEntity]),
+    EnvironmentsModule,
+    ModesModule,
+  ],
   controllers: [ZatcaController],
   providers: [
     {
