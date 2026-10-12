@@ -16,6 +16,8 @@ import { ChainService } from './chain/chain.service';
 import { RetryService } from './submission/retry.service';
 import { RetryScheduler } from './submission/retry.scheduler';
 import { ZatcaController } from './zatca.controller';
+import { InvoicesController } from './invoices/invoices.controller';
+import { InvoicesService } from './invoices/invoices.service';
 
 @Module({
   imports: [
@@ -24,7 +26,7 @@ import { ZatcaController } from './zatca.controller';
     EnvironmentsModule,
     ModesModule,
   ],
-  controllers: [ZatcaController],
+  controllers: [ZatcaController, InvoicesController],
   providers: [
     {
       // live = الاتصال الحقيقي بالهيئة، fake = ردود محلية (الافتراضي)
@@ -39,6 +41,7 @@ import { ZatcaController } from './zatca.controller';
     ChainService,
     RetryService,
     RetryScheduler,
+    InvoicesService,
   ],
 })
 export class ZatcaModule {}

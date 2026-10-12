@@ -476,7 +476,7 @@
 - **رسالة الـ commit:** `feat(retry): scheduled retries every 5 minutes with backoff`
 
 ### الخطوة 20: قائمة الفواتير وتفاصيلها
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** `GET /zatca/invoices` و `GET /zatca/invoices/:id` و `GET /zatca/invoices/:id/xml`.
 - **يعتمد على:** 17
 - **الملفات:** `src/zatca/invoices/invoices.controller.ts`، `invoices-query.dto.ts`، `src/zatca/zatca.controller.ts` (نقل مسار XML)، `test/int/invoices-list.int-spec.ts`
