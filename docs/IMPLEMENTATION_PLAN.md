@@ -541,7 +541,7 @@
 - **رسالة الـ commit:** `feat(web): API client and types for modes, settings and invoices`
 
 ### الخطوة 26: ألوان الأوضاع والشريط العلوي
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** شريط علوي بلون الوضع، وزر "تغيير الوضع"، وشريط أحمر دائم في الإنتاج.
 - **يعتمد على:** 25
 - **الملفات:** `frontend/src/ModeBar.tsx`، `frontend/src/App.tsx`، `frontend/src/styles.css`

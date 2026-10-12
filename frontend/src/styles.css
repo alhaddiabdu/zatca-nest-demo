@@ -17,6 +17,13 @@
   --info: #1d5fbf;
   --info-soft: #e5eefc;
   --neutral-soft: #eceff0;
+  /* ألوان الأوضاع: أخضر = بوابة المطورين، برتقالي = المحاكاة، أحمر = الإنتاج */
+  --mode-dev: #12804f;
+  --mode-dev-soft: #e2f4ea;
+  --mode-sim: #b25e00;
+  --mode-sim-soft: #fdebd6;
+  --mode-core: #b42318;
+  --mode-core-soft: #fde7e5;
   --radius: 12px;
   --shadow: 0 1px 2px rgb(16 24 20 / 6%), 0 2px 8px rgb(16 24 20 / 4%);
   color-scheme: light;
@@ -42,6 +49,12 @@
     --info: #79a8f2;
     --info-soft: #1a2a42;
     --neutral-soft: #242d29;
+    --mode-dev: #4cc68d;
+    --mode-dev-soft: #173626;
+    --mode-sim: #f0a04b;
+    --mode-sim-soft: #3a2a14;
+    --mode-core: #f2796f;
+    --mode-core-soft: #3d1e1b;
     --shadow: none;
     color-scheme: dark;
   }
@@ -75,6 +88,28 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem
   width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
   display: grid; place-items: center;
   background: var(--primary); color: #fff; font-weight: 700; font-size: 1.3rem;
+}
+
+/* ===== شريط الوضع ===== */
+.app.mode-green { --mode: var(--mode-dev); --mode-soft: var(--mode-dev-soft); }
+.app.mode-orange { --mode: var(--mode-sim); --mode-soft: var(--mode-sim-soft); }
+.app.mode-red { --mode: var(--mode-core); --mode-soft: var(--mode-core-soft); }
+.app[class*='mode-'] .topbar { border-bottom: 3px solid var(--mode); padding-bottom: 12px; }
+.modebar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.mode-pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px;
+  font-weight: 600; font-size: 0.9rem; white-space: nowrap;
+}
+.mode-pill.mode-green { background: var(--mode-dev-soft); color: var(--mode-dev); }
+.mode-pill.mode-orange { background: var(--mode-sim-soft); color: var(--mode-sim); }
+.mode-pill.mode-red { background: var(--mode-core-soft); color: var(--mode-core); }
+.mode-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.core-banner {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline;
+  background: var(--mode-core); color: #fff; border-radius: 10px; padding: 10px 14px; margin: -8px 0 20px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .core-banner { color: #1a0d0b; }
 }
 
 /* ===== الحالة ===== */
@@ -193,9 +228,9 @@ input[dir='ltr'] { text-align: left; }
 .badge.danger { background: var(--danger-soft); color: var(--danger); }
 .badge.info { background: var(--info-soft); color: var(--info); }
 .badge.neutral { background: var(--neutral-soft); color: var(--muted); }
-.badge.env-developer-portal { background: var(--info-soft); color: var(--info); }
-.badge.env-simulation { background: var(--warning-soft); color: var(--warning); }
-.badge.env-core { background: var(--danger-soft); color: var(--danger); }
+.badge.env-developer-portal { background: var(--mode-dev-soft); color: var(--mode-dev); }
+.badge.env-simulation { background: var(--mode-sim-soft); color: var(--mode-sim); }
+.badge.env-core { background: var(--mode-core-soft); color: var(--mode-core); }
 
 .alert { border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
 .alert.danger { background: var(--danger-soft); color: var(--danger); }

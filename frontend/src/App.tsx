@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from './api';
-import { CATEGORY_LABELS, ENV_LABELS, formatDate, formatMoney, KIND_LABELS, STATUS_LABELS, STATUS_TONES } from './format';
+import { CATEGORY_LABELS, formatDate, formatMoney, KIND_LABELS, MODE_COLORS, STATUS_LABELS, STATUS_TONES } from './format';
 import { InvoiceForm, Prefill } from './InvoiceForm';
 import { InvoiceResult } from './InvoiceResult';
 import { Onboarding } from './Onboarding';
+import { CoreBanner, ModeBar } from './ModeBar';
 import type { HistoryItem, InvoicePayload, IssueResult, Status } from './types';
 
 type Tab = 'invoice' | 'onboard' | 'history';
@@ -88,7 +89,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className={`app${status ? ` mode-${MODE_COLORS[status.env]}` : ''}`}>
       <header className="topbar">
         <div className="brand">
           <div className="logo" aria-hidden>ف</div>
@@ -97,8 +98,9 @@ export function App() {
             <p>الربط مع هيئة الزكاة والضريبة والجمارك — المرحلة الثانية</p>
           </div>
         </div>
-        {status && <span className={`badge env-${status.env}`}>{ENV_LABELS[status.env]}</span>}
+        <ModeBar mode={status?.env ?? null} />
       </header>
+      <CoreBanner mode={status?.env ?? null} />
 
       {statusError && (
         <div className="alert danger">
