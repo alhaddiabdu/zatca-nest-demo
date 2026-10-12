@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EnvironmentEntity, ZatcaEnvName } from '../../database/entities/environment.entity';
 import { CryptoBoxService } from '../../security/crypto-box.service';
 import { Credentials } from '../storage/egs-store.service';
 import { EgsInfo, SellerInfo } from '../zatca.config';
+import { UpdateSettingsDto } from './settings.dto';
 
 export const ZATCA_ENVS: readonly ZatcaEnvName[] = ['developer-portal', 'simulation', 'core'];
 
@@ -36,6 +37,24 @@ export const SETTINGS_FIELDS = {
     industry: 'egsIndustry',
   },
 } as const satisfies Record<'seller' | 'egs', Record<string, keyof EnvironmentEntity>>;
+
+/**
+ * بعد التسجيل تُقفل الحقول المكتوبة داخل الـ CSR والشهادة، لأن تغييرها يتطلب إعادة تسجيل.
+ * العنوان والسجل التجاري يبقيان قابلين للتعديل.
+ */
+export const LOCKED_AFTER_ONBOARDING = [
+  'seller.name', 'seller.vatNumber',
+  ...Object.keys(SETTINGS_FIELDS.egs).map((f) => `egs.${f}`),
+];
+
+export interface SettingsView {
+  env: ZatcaEnvName;
+  seller: SellerInfo;
+  egs: EgsInfo;
+  complete: boolean;
+  missing: string[];
+  lockedFields: string[];
+}
 
 export interface EnvSecrets {
   privateKeyPem: string | null;
@@ -137,6 +156,44 @@ export class EnvironmentsService {
       }
     }
     return missing;
+  }
+
+  settingsView(row: EnvironmentEntity): SettingsView {
+    const missing = this.missingSettings(row);
+    return {
+      env: row.env,
+      seller: this.toSeller(row),
+      egs: this.toEgs(row),
+      complete: missing.length === 0,
+      missing,
+      lockedFields: row.productionTokenEnc ? [...LOCKED_AFTER_ONBOARDING] : [],
+    };
+  }
+
+  async updateSettings(env: string, dto: UpdateSettingsDto): Promise<SettingsView> {
+    const row = await this.get(env);
+    if (row.productionTokenEnc) {
+      const current: Record<string, Record<string, string>> = { seller: this.pick(row, 'seller'), egs: this.pick(row, 'egs') };
+      const changed = LOCKED_AFTER_ONBOARDING.filter((path) => {
+        const [group, field] = path.split('.') as ['seller' | 'egs', string];
+        return (dto[group] as unknown as Record<string, string>)[field] !== current[group][field];
+      });
+      if (changed.length) {
+        throw new ConflictException({
+          code: 'FIELDS_LOCKED',
+          message: 'هذه الحقول مقفلة بعد التسجيل لأنها داخل الشهادة. لتغييرها أعد التسجيل.',
+          fields: changed,
+        });
+      }
+    }
+    const patch: Partial<EnvironmentEntity> = {};
+    for (const group of ['seller', 'egs'] as const) {
+      for (const [field, prop] of Object.entries(SETTINGS_FIELDS[group])) {
+        (patch as Record<string, unknown>)[prop] = (dto[group] as unknown as Record<string, string>)[field];
+      }
+    }
+    await this.repo.update({ env: row.env }, patch);
+    return this.settingsView(await this.get(row.env));
   }
 
   /** بيانات البائع بالشكل الذي يستخدمه بناء XML (مع إزالة مسافات أعمدة char) */

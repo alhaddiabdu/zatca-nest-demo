@@ -385,7 +385,7 @@
 - **رسالة الـ commit:** `feat(env): environments service with encrypted credentials`
 
 ### الخطوة 12: إعدادات المنشأة — DTO و endpoints
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** `GET` و `PUT /zatca/environments/:env/settings` بتحقق صارم.
 - **يعتمد على:** 11
 - **الملفات:** `src/zatca/environments/settings.dto.ts`، `environments.controller.ts`، `test/settings.dto.spec.ts`، `test/int/settings.int-spec.ts`
