@@ -551,7 +551,7 @@
 - **رسالة الـ commit:** `feat(web): mode-colored top bar and permanent production warning`
 
 ### الخطوة 27: شاشة اختيار الوضع
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** ثلاث بطاقات تعرض الحالة وعدد الفواتير.
 - **يعتمد على:** 26
 - **الملفات:** `frontend/src/ModeSelect.tsx`، `frontend/src/styles.css`

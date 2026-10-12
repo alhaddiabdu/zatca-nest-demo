@@ -112,6 +112,28 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem
   :root:not([data-theme='light']) .core-banner { color: #1a0d0b; }
 }
 
+/* ===== اختيار الوضع ===== */
+.mode-select { display: flex; flex-direction: column; gap: 16px; }
+.mode-select-head { display: flex; flex-direction: column; gap: 4px; }
+.mode-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.mode-card { display: flex; flex-direction: column; gap: 12px; border-top: 4px solid var(--card-mode); }
+.mode-card.mode-green { --card-mode: var(--mode-dev); --card-mode-soft: var(--mode-dev-soft); }
+.mode-card.mode-orange { --card-mode: var(--mode-sim); --card-mode-soft: var(--mode-sim-soft); }
+.mode-card.mode-red { --card-mode: var(--mode-core); --card-mode-soft: var(--mode-core-soft); }
+.mode-card h3 { margin: 0; font-size: 1.1rem; color: var(--card-mode); }
+.mode-card .card-head { margin-bottom: 0; }
+.mode-card.active { outline: 2px solid var(--card-mode); outline-offset: -2px; }
+.mode-desc { margin: 0; color: var(--muted); font-size: 0.9rem; flex: 1; }
+.mode-stats { margin: 0; display: flex; gap: 24px; }
+.mode-stats dt { color: var(--muted); font-size: 0.8rem; }
+.mode-stats dd { margin: 0; font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mode-current { align-self: flex-start; font-size: 0.8rem; font-weight: 600; color: var(--card-mode); background: var(--card-mode-soft); padding: 2px 10px; border-radius: 999px; }
+.mode-card .mode-choose { background: var(--card-mode); }
+.mode-card .mode-choose:hover:not(:disabled) { background: var(--card-mode); filter: brightness(0.92); }
+@media (max-width: 760px) {
+  .mode-cards { grid-template-columns: 1fr; }
+}
+
 /* ===== الحالة ===== */
 .status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .stat {
