@@ -1,6 +1,6 @@
 # خطة التنفيذ: أوضاع التشغيل الثلاثة + PostgreSQL
 
-> الفرع: `feature/modes-postgres` · كُتبت بتاريخ 2026-10-12 · الحالة: بانتظار الموافقة على الأسئلة في القسم 5
+> الفرع: `main` · كُتبت بتاريخ 2026-10-12 · الحالة: بانتظار الموافقة على الأسئلة في القسم 5
 
 ## 1) مقدمة
 
@@ -26,7 +26,7 @@
 - ممنوع تعديل منطق `src/zatca/crypto/*` و `src/zatca/xml/*`. المسموح فقط تغيير طريقة استدعائها وما يُمرَّر لها. `npm run check:frozen` يجب أن ينجح بعد كل خطوة.
 - `src/zatca/xml/invoice-builder.ts` و `scripts/offline-demo.ts` يستوردان النوع `SellerInfo` من `src/zatca/zatca.config.ts`، فيجب أن يبقى هذا التصدير بنفس الشكل. وكذلك `ZATCA_BASE_URLS` و `CERT_TEMPLATE_NAMES`.
 - لا طلبات لخوادم الهيئة أثناء التطوير والاختبار: `ZATCA_TRANSPORT=fake` في كل بيئات التطوير، والاختبارات لا تستخدم الناقل الحقيقي أبداً.
-- كل العمل على الفرع `feature/modes-postgres`، و commit لكل خطوة.
+- كل العمل على الفرع `main` مباشرة (لا فروع أخرى)، و commit محلي لكل خطوة، ولا رفع إلى GitHub إلا بأمر صريح.
 - لا `synchronize: true` في أي مكان، حتى في الاختبارات.
 
 ---
@@ -259,7 +259,7 @@
 - **يعتمد على:** —
 - **الملفات:** `docs/IMPLEMENTATION_PLAN.md`
 - **التفاصيل:** إنشاء الفرع من `main` وحفظ هذا الملف فيه.
-- **الأوامر:** `git switch -c feature/modes-postgres` ثم `git add docs/IMPLEMENTATION_PLAN.md`
+- **الأوامر:** (نُفّذت على فرع `feature/modes-postgres` ثم دُمج في `main` وحُذف الفرع) `git switch -c feature/modes-postgres` ثم `git add docs/IMPLEMENTATION_PLAN.md`
 - **معيار القبول:** `git branch --show-current` يطبع `feature/modes-postgres`، و `npm run build && npm test` ينجحان.
 - **رسالة الـ commit:** `docs: add implementation plan for modes and PostgreSQL`
 
@@ -268,7 +268,7 @@
 - **الهدف:** فحص آلي يفشل إذا تغيّر أي ملف في `crypto/` أو `xml/`.
 - **يعتمد على:** 0
 - **الملفات:** `scripts/check-frozen.sh` (جديد)، `package.json` (سكربت `check:frozen`)
-- **التفاصيل:** السكربت ينفّذ `git diff --exit-code main -- src/zatca/crypto src/zatca/xml`، ويطبع رسالة عربية واضحة عند الفشل.
+- **التفاصيل:** السكربت ينفّذ `git diff --exit-code ea4af78 -- src/zatca/crypto src/zatca/xml` (المقارنة مع أول commit وليس مع فرع، لأن العمل على main)، ويطبع رسالة عربية واضحة عند الفشل.
 - **الأوامر:** `npm run check:frozen`
 - **معيار القبول:** ينجح الآن. تعديل تجريبي غير محفوظ في `qr.ts` يجعله يفشل برمز خروج 1، ثم `git checkout` يعيده للنجاح.
 - **رسالة الـ commit:** `chore: add guard against changes to frozen crypto/xml modules`
