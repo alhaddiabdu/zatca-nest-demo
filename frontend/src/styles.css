@@ -143,6 +143,8 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem
 .confirm-dialog input[aria-invalid='true'] { outline: 2px solid var(--danger); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
+.back-link { margin-bottom: 12px; display: inline-block; }
+
 /* ===== الحالة ===== */
 .status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .stat {

@@ -1,5 +1,4 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AppSettingsEntity } from '../../database/entities/app-settings.entity';
@@ -24,7 +23,6 @@ export class ModeService {
     @InjectRepository(AppSettingsEntity) private readonly settings: Repository<AppSettingsEntity>,
     @InjectRepository(InvoiceEntity) private readonly invoices: Repository<InvoiceEntity>,
     private readonly environments: EnvironmentsService,
-    private readonly config: ConfigService,
   ) {}
 
   /** الوضع المحفوظ كما هو (null = لم يُختر بعد، فتعرض الواجهة شاشة الاختيار) */
@@ -32,15 +30,10 @@ export class ModeService {
     return (await this.settings.findOneBy({ id: 1 }))?.activeEnv ?? null;
   }
 
-  /**
-   * الوضع الذي تعمل عليه العمليات، أو 409 إن لم يُختر.
-   * مرحلة انتقالية حتى الخطوة 30: إن لم يُختر وضع يُستخدم ZATCA_ENV حتى تبقى الواجهة القديمة تعمل.
-   */
+  /** الوضع الذي تعمل عليه العمليات، أو 409 إن لم يُختر (تعرض الواجهة شاشة الاختيار) */
   async requireActive(): Promise<ZatcaEnvName> {
     const active = await this.getActive();
     if (active) return active;
-    const legacy = this.config.get<string>('ZATCA_ENV');
-    if (isZatcaEnv(legacy)) return legacy;
     throw new ConflictException({ code: 'NO_ACTIVE_MODE', message: 'لم يُختر وضع تشغيل بعد. اختر الوضع أولاً.' });
   }
 

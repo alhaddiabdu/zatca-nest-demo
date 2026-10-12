@@ -581,7 +581,7 @@
 - **رسالة الـ commit:** `feat(web): organization and EGS settings page`
 
 ### الخطوة 30: منسّق التدفق في App
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** الانتقال التلقائي: البطاقات ← الإعدادات ← التسجيل ← اللوحة.
 - **يعتمد على:** 27، 28، 29
 - **الملفات:** `frontend/src/App.tsx`، `src/zatca/modes/mode.service.ts` (إزالة الرجوع إلى `ZATCA_ENV`)

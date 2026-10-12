@@ -200,16 +200,6 @@ export interface InvoiceQuery {
   pageSize?: number;
 }
 
-export interface HistoryItem {
-  id: string;
-  category: Category;
-  kind: Kind;
-  status: IssueStatus | 'DRY_RUN';
-  total?: number;
-  issuedAt: string;
-  dryRun: boolean;
-}
-
 export interface ComplianceCheck {
   document: string;
   status: number;

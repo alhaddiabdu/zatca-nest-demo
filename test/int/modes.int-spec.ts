@@ -95,9 +95,9 @@ describe('Operating modes: /zatca/modes and /zatca/mode', () => {
       await expect(modes.requireActive()).rejects.toMatchObject({ response: { code: 'NO_ACTIVE_MODE' } });
     });
 
-    it('transitional fallback to ZATCA_ENV', async () => {
+    it('ZATCA_ENV is no longer used as a fallback', async () => {
       process.env.ZATCA_ENV = 'simulation';
-      await expect(modes.requireActive()).resolves.toBe('simulation');
+      await expect(modes.requireActive()).rejects.toMatchObject({ response: { code: 'NO_ACTIVE_MODE' } });
     });
 
     it('a stored mode wins over ZATCA_ENV', async () => {
