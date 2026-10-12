@@ -1,7 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { envProfile, ZatcaEnv } from '../zatca.config';
-import { Credentials } from '../storage/egs-store.service';
-import { CsidResponse, SubmitBody, ZatcaApi, ZatcaResponse } from './zatca-api.port';
+import { Credentials, CsidResponse, SubmitBody, ZatcaApi, ZatcaResponse } from './zatca-api.port';
 
 export type { CsidResponse, SubmitBody, ZatcaResponse } from './zatca-api.port';
 

@@ -5,9 +5,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { pemToCertBase64 } from '../crypto/certificate';
-import { Credentials } from '../storage/egs-store.service';
 import { ZatcaEnv } from '../zatca.config';
-import { CsidResponse, SubmitBody, ZatcaApi, ZatcaResponse } from './zatca-api.port';
+import { Credentials, CsidResponse, SubmitBody, ZatcaApi, ZatcaResponse } from './zatca-api.port';
 
 /**
  * ناقل وهمي لمنصة فاتورة (ZATCA_TRANSPORT=fake): لا يتصل بأي خادم.

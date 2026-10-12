@@ -1,13 +1,12 @@
 import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID, X509Certificate } from 'crypto';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { ComplianceCheckEntity } from '../database/entities/compliance-check.entity';
 import { ZatcaEnvName } from '../database/entities/environment.entity';
 import { InvoiceEntity, InvoiceStatus } from '../database/entities/invoice.entity';
 import { envProfile, SellerInfo } from './zatca.config';
-import { ZatcaApi } from './api/zatca-api.port';
-import { Credentials, EgsStoreService } from './storage/egs-store.service';
+import { Credentials, ZatcaApi } from './api/zatca-api.port';
 import { EnvironmentsService } from './environments/environments.service';
 import { ModeService } from './modes/mode.service';
 import { MODE_META } from './modes/active-env';
@@ -23,7 +22,7 @@ export const DEVELOPER_PORTAL_OTP = '123345';
 /**
  * رحلة التسجيل (الخطوات 1 إلى 5) للوضع النشط — مرة واحدة لكل وضع.
  * بيانات المنشأة والمفتاح والشهادات في جدول environments، والفحوصات في compliance_checks.
- * مؤقتاً حتى الخطوة 17: السلسلة والمعلّق ما زالا في EgsStoreService (ملف JSON).
+ * تسجيلان متزامنان لنفس الوضع ممنوعان بقفل استشاري في PostgreSQL (يعمل عبر أكثر من نسخة).
  */
 @Injectable()
 export class OnboardingService {
@@ -31,7 +30,7 @@ export class OnboardingService {
 
   constructor(
     private readonly api: ZatcaApi,
-    private readonly store: EgsStoreService,
+    private readonly dataSource: DataSource,
     private readonly environments: EnvironmentsService,
     private readonly modes: ModeService,
     @InjectRepository(InvoiceEntity) private readonly invoices: Repository<InvoiceEntity>,
@@ -39,8 +38,8 @@ export class OnboardingService {
   ) {}
 
   async onboard(otp?: string, force = false) {
-    return this.store.runExclusive(async () => {
-      const env = await this.modes.requireActive();
+    const env = await this.modes.requireActive();
+    return this.withOnboardingLock(env, async () => {
       const row = await this.environments.get(env);
 
       const missing = this.environments.missingSettings(row);
@@ -120,13 +119,28 @@ export class OnboardingService {
         onboardedAt: new Date(),
         chain: { chainEpoch, icv: 0, pih: INITIAL_PIH },
       });
-      // مؤقتاً حتى الخطوة 17: إصدار الفواتير ما زال يقرأ السلسلة من ملف JSON
-      const legacy = this.store.load();
-      legacy.chain = { icv: 0, pih: INITIAL_PIH };
-      this.store.save(legacy);
-
       return { message: 'تم التسجيل بنجاح، يمكنك الآن إرسال الفواتير', env, runId, complianceChecks: checks };
     });
+  }
+
+  /** يمنع تسجيلين متزامنين لنفس الوضع، حتى من نسختين مختلفتين من التطبيق */
+  private async withOnboardingLock<T>(env: ZatcaEnvName, fn: () => Promise<T>): Promise<T> {
+    const runner = this.dataSource.createQueryRunner();
+    await runner.connect();
+    const key = `zatca-onboard:${env}`;
+    try {
+      const [{ locked }] = await runner.query('select pg_try_advisory_lock(hashtext($1)) as locked', [key]);
+      if (!locked) {
+        throw new ConflictException({ code: 'ONBOARDING_IN_PROGRESS', message: 'يوجد تسجيل جارٍ لهذا الوضع، انتظر حتى ينتهي' });
+      }
+      try {
+        return await fn();
+      } finally {
+        await runner.query('select pg_advisory_unlock(hashtext($1))', [key]);
+      }
+    } finally {
+      await runner.release();
+    }
   }
 
   private async runComplianceChecks(

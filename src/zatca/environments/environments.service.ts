@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EnvironmentEntity, ZatcaEnvName } from '../../database/entities/environment.entity';
 import { CryptoBoxService } from '../../security/crypto-box.service';
-import { Credentials } from '../storage/egs-store.service';
+import { Credentials } from '../api/zatca-api.port';
 import { EgsInfo, SellerInfo } from '../zatca.config';
 import { UpdateSettingsDto } from './settings.dto';
 

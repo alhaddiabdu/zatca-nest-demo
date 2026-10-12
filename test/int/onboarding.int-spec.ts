@@ -87,6 +87,19 @@ describe('POST /zatca/onboard (PostgreSQL + fake transport)', () => {
       await ds.query(`delete from invoices where invoice_number = 'P-1'`);
     });
 
+    it('a concurrent onboarding of the same mode → 409 ONBOARDING_IN_PROGRESS', async () => {
+      const runner = ds.createQueryRunner();
+      await runner.connect();
+      try {
+        await runner.query(`select pg_advisory_lock(hashtext('zatca-onboard:developer-portal'))`);
+        const res = await http().post('/zatca/onboard').send({ force: true }).expect(409);
+        expect(res.body.code).toBe('ONBOARDING_IN_PROGRESS');
+      } finally {
+        await runner.query(`select pg_advisory_unlock(hashtext('zatca-onboard:developer-portal'))`);
+        await runner.release();
+      }
+    });
+
     it('re-onboarding with force starts a new chain epoch', async () => {
       await http().post('/zatca/onboard').send({ force: true }).expect(200);
       const row = await env('developer-portal');

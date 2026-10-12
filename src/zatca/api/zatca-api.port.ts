@@ -1,5 +1,11 @@
-import { Credentials } from '../storage/egs-store.service';
 import { ZatcaEnv } from '../zatca.config';
+
+/** بيانات المصادقة من رد الهيئة (شهادة الامتثال أو الإنتاج) */
+export interface Credentials {
+  binarySecurityToken: string;
+  secret: string;
+  requestId?: string;
+}
 
 export interface CsidResponse {
   requestID: number | string;

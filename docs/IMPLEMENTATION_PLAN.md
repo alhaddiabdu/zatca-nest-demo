@@ -511,13 +511,13 @@
 - **رسالة الـ commit:** `feat(scripts): import legacy JSON state into PostgreSQL`
 
 ### الخطوة 23: إزالة التخزين القديم
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** حذف `EgsStoreService` وكل قراءة أو كتابة لملفات JSON و XML.
 - **يعتمد على:** 18، 20، 22
 - **الملفات:** حذف `src/zatca/storage/egs-store.service.ts`، و `src/zatca/zatca.module.ts`، و `src/zatca/zatca.config.ts` (إزالة `dataDir` و seller و egs من الإعداد العام مع إبقاء `SellerInfo`)
 - **التفاصيل:** `runExclusive` لم يعد مطلوباً لأن القفل في القاعدة. `DATA_DIR` لا يُستخدم إلا في سكربت الاستيراد.
 - **الأوامر:** `grep -rn "egs-store\|DATA_DIR\|writeFileSync" src` ثم `npm run build && npm test && npm run test:int`
-- **معيار القبول:** `grep` لا يجد شيئاً في `src`. كل الاختبارات تنجح. `npm run check:frozen` ينجح. `npm run demo:offline` ما زال يعمل.
+- **معيار القبول:** `grep` لا يجد `egs-store` ولا `DATA_DIR` في `src`، ولا `writeFileSync` إلا للملفات المؤقتة لـ openssl في `crypto/csr.ts` (مجمّد) و `fake-zatca-api.service.ts` (تُحذف بعد الاستخدام). كل الاختبارات تنجح. `npm run check:frozen` ينجح. `npm run demo:offline` ما زال يعمل.
 - **رسالة الـ commit:** `refactor: remove legacy JSON file storage`
 
 ### الخطوة 24: docker-compose للتطبيق مع القاعدة

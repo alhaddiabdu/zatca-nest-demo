@@ -1,7 +1,6 @@
 import { InvoiceEntity } from '../../database/entities/invoice.entity';
 import { ZatcaEnvName } from '../../database/entities/environment.entity';
-import { Credentials } from '../storage/egs-store.service';
-import { SubmitBody, ZatcaApi, ZatcaResponse } from '../api/zatca-api.port';
+import { Credentials, SubmitBody, ZatcaApi, ZatcaResponse } from '../api/zatca-api.port';
 import { classifyResponse } from './classify';
 
 export interface SubmitResult {

@@ -5,8 +5,7 @@ import * as QRCode from 'qrcode';
 import { Repository } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { envProfile } from './zatca.config';
-import { ZatcaApi } from './api/zatca-api.port';
-import { Credentials, EgsStoreService } from './storage/egs-store.service';
+import { Credentials, ZatcaApi } from './api/zatca-api.port';
 import { createSelfSignedCert, generateKeyAndCsr } from './crypto/csr';
 import { pemToCertBase64, tokenToCertBase64 } from './crypto/certificate';
 import { signInvoice } from './crypto/signer';
@@ -31,7 +30,6 @@ export class InvoiceService {
 
   constructor(
     private readonly api: ZatcaApi,
-    private readonly store: EgsStoreService,
     private readonly environments: EnvironmentsService,
     private readonly modes: ModeService,
     private readonly chain: ChainService,
@@ -92,15 +90,13 @@ export class InvoiceService {
       const saved = await this.invoices.save(
         this.invoices.create({ ...fields, env, invoiceNumber: dto.id, isDryRun: true, status: 'DRY_RUN' }),
       );
-      // مؤقتاً حتى الخطوة 23: نسخة على القرص لرابط XML في الواجهة الحالية
-      const xmlPath = this.store.saveInvoiceXml(`dryrun-${dto.id}`, signed.signedXml);
       return {
         dryRun: true,
         note: 'لم تُرسل للهيئة ولم تتغير السلسلة. التوقيع بشهادة محلية للتجربة فقط.',
         invoiceId: saved.id,
         icv, pih: row.pih, uuid, invoiceHash: signed.invoiceHash, totals: built.totals, qr: signed.qr,
         qrImage: await QRCode.toDataURL(signed.qr),
-        xmlPath,
+        xmlPath: `/zatca/invoices/${saved.id}/xml`,
       };
     }
 
@@ -120,7 +116,6 @@ export class InvoiceService {
     const fields = outcomeFields(submitted, 1);
     await this.invoices.update({ id: invoice.id }, fields as QueryDeepPartialEntity<InvoiceEntity>);
 
-    const xmlPath = this.store.saveInvoiceXml(dto.id, fields.clearedXml ?? invoice.signedXml);
     return {
       invoiceId: invoice.id,
       status: fields.status,
@@ -128,7 +123,7 @@ export class InvoiceService {
       message: fields.status === 'PENDING' ? 'تعذر الإرسال للهيئة، حُفظت وستُعاد المحاولة تلقائياً' : undefined,
       icv: invoice.icv, uuid, invoiceHash: invoice.invoiceHash, totals: result.built.totals,
       zatca: submitted.res?.body,
-      xmlPath,
+      xmlPath: `/zatca/invoices/${invoice.id}/xml`,
       qrImage: fields.clearedXml ? undefined : await QRCode.toDataURL(invoice.qr),
     };
   }
