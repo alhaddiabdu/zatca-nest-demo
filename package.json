@@ -10,7 +10,8 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
     "demo:offline": "ts-node scripts/offline-demo.ts",
-    "test": "jest"
+    "test": "jest",
+    "check:frozen": "bash scripts/check-frozen.sh"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

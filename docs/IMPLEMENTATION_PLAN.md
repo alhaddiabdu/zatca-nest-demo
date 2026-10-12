@@ -264,7 +264,7 @@
 - **رسالة الـ commit:** `docs: add implementation plan for modes and PostgreSQL`
 
 ### الخطوة 1: حارس الملفات المجمّدة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** فحص آلي يفشل إذا تغيّر أي ملف في `crypto/` أو `xml/`.
 - **يعتمد على:** 0
 - **الملفات:** `scripts/check-frozen.sh` (جديد)، `package.json` (سكربت `check:frozen`)
