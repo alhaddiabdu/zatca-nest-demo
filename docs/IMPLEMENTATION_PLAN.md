@@ -442,7 +442,7 @@
 - **رسالة الـ commit:** `feat(submission): response classification and exponential backoff`
 
 ### الخطوة 17: ربط إصدار الفاتورة بقاعدة البيانات
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** `POST /zatca/invoices` يحفظ كل فاتورة في `invoices` ويستخدم ChainService.
 - **يعتمد على:** 14، 15، 16
 - **الملفات:** `src/zatca/invoice.service.ts`، `test/int/issue.int-spec.ts`
