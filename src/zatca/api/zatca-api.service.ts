@@ -1,6 +1,5 @@
-import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { ConfigType } from '@nestjs/config';
-import zatcaConfig from '../zatca.config';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { envProfile, ZatcaEnv } from '../zatca.config';
 import { Credentials } from '../storage/egs-store.service';
 
 export interface CsidResponse {
@@ -24,7 +23,7 @@ export interface ZatcaResponse<T = any> {
 }
 
 /**
- * كل الاتصالات مع منصة فاتورة.
+ * كل الاتصالات مع منصة فاتورة. كل دالة تأخذ الوضع (البيئة) المستهدف أولاً.
  * status: 200 مقبول | 202 مقبول مع تحذيرات | 400 مرفوض | 401 مشكلة مصادقة
  *         303 الاعتماد غير مفعّل حالياً، أرسل الفاتورة القياسية عبر الإبلاغ
  */
@@ -32,15 +31,14 @@ export interface ZatcaResponse<T = any> {
 export class ZatcaApiService {
   private readonly logger = new Logger(ZatcaApiService.name);
 
-  constructor(@Inject(zatcaConfig.KEY) private readonly config: ConfigType<typeof zatcaConfig>) {}
-
   private async request<T>(
+    env: ZatcaEnv,
     method: 'POST' | 'PATCH',
     path: string,
     body: unknown,
     headers: Record<string, string> = {},
   ): Promise<ZatcaResponse<T>> {
-    const url = this.config.baseUrl + path;
+    const url = envProfile(env).baseUrl + path;
     this.logger.log(`${method} ${url}`);
     let res: Response;
     try {
@@ -77,18 +75,19 @@ export class ZatcaApiService {
   }
 
   /** الخطوة 3: CSR + OTP ← شهادة الامتثال */
-  requestComplianceCsid(csrBase64: string, otp: string) {
-    return this.request<CsidResponse>('POST', '/compliance', { csr: csrBase64 }, { OTP: otp });
+  requestComplianceCsid(env: ZatcaEnv, csrBase64: string, otp: string) {
+    return this.request<CsidResponse>(env, 'POST', '/compliance', { csr: csrBase64 }, { OTP: otp });
   }
 
   /** الخطوة 4: فحوصات الامتثال بالفواتير التجريبية */
-  complianceCheck(creds: Credentials, body: SubmitBody) {
-    return this.request('POST', '/compliance/invoices', body, this.basicAuth(creds));
+  complianceCheck(env: ZatcaEnv, creds: Credentials, body: SubmitBody) {
+    return this.request(env, 'POST', '/compliance/invoices', body, this.basicAuth(creds));
   }
 
   /** الخطوة 5: شهادة الإنتاج */
-  requestProductionCsid(complianceCreds: Credentials) {
+  requestProductionCsid(env: ZatcaEnv, complianceCreds: Credentials) {
     return this.request<CsidResponse>(
+      env,
       'POST',
       '/production/csids',
       { compliance_request_id: String(complianceCreds.requestId) },
@@ -97,8 +96,9 @@ export class ZatcaApiService {
   }
 
   /** تجديد شهادة الإنتاج قبل انتهائها (CSR جديد + OTP جديد) */
-  renewProductionCsid(productionCreds: Credentials, csrBase64: string, otp: string) {
+  renewProductionCsid(env: ZatcaEnv, productionCreds: Credentials, csrBase64: string, otp: string) {
     return this.request<CsidResponse>(
+      env,
       'PATCH',
       '/production/csids',
       { csr: csrBase64 },
@@ -107,16 +107,16 @@ export class ZatcaApiService {
   }
 
   /** الخطوة 10: الفواتير المبسطة (B2C) — خلال 24 ساعة */
-  report(creds: Credentials, body: SubmitBody) {
-    return this.request('POST', '/invoices/reporting/single', body, {
+  report(env: ZatcaEnv, creds: Credentials, body: SubmitBody) {
+    return this.request(env, 'POST', '/invoices/reporting/single', body, {
       ...this.basicAuth(creds),
       'Clearance-Status': '0',
     });
   }
 
   /** الخطوة 10: الفواتير القياسية (B2B) — قبل تسليمها للعميل */
-  clear(creds: Credentials, body: SubmitBody) {
-    return this.request('POST', '/invoices/clearance/single', body, {
+  clear(env: ZatcaEnv, creds: Credentials, body: SubmitBody) {
+    return this.request(env, 'POST', '/invoices/clearance/single', body, {
       ...this.basicAuth(creds),
       'Clearance-Status': '1',
     });

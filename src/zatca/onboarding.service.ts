@@ -48,7 +48,7 @@ export class OnboardingService {
       this.logger.log('1) تم توليد المفتاح الخاص و CSR');
 
       // 2+3) OTP ← شهادة الامتثال
-      const ccsid = await this.api.requestComplianceCsid(csr.csrBase64, otp);
+      const ccsid = await this.api.requestComplianceCsid(this.config.env, csr.csrBase64, otp);
       if (!ccsid.ok) throw new BadRequestException({ step: 'compliance-csid', zatca: ccsid });
       const compliance = {
         binarySecurityToken: ccsid.body.binarySecurityToken,
@@ -66,7 +66,7 @@ export class OnboardingService {
       this.logger.log(`4) نجحت فحوصات الامتثال (${checks.length} وثائق)`);
 
       // 5) شهادة الإنتاج
-      const pcsid = await this.api.requestProductionCsid(compliance);
+      const pcsid = await this.api.requestProductionCsid(this.config.env, compliance);
       if (!pcsid.ok) throw new BadRequestException({ step: 'production-csid', zatca: pcsid });
       this.logger.log('5) تم استلام شهادة الإنتاج ✔');
 
@@ -132,7 +132,7 @@ export class OnboardingService {
           this.config.seller,
         );
         const signed = signInvoice({ unsignedXml: built.unsignedXml, privateKeyPem, certBase64, qrFields: built.qrFields });
-        const res = await this.api.complianceCheck(creds, {
+        const res = await this.api.complianceCheck(this.config.env, creds, {
           invoiceHash: signed.invoiceHash,
           uuid,
           invoice: Buffer.from(signed.signedXml, 'utf8').toString('base64'),

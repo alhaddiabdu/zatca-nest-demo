@@ -349,7 +349,7 @@
 - **رسالة الـ commit:** `feat(config): fail fast on missing MASTER_KEY and DATABASE_URL`
 
 ### الخطوة 9: ZatcaApiService يأخذ البيئة لكل طلب
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** إزالة الاعتماد على بيئة ثابتة في الإقلاع من طبقة الـ API.
 - **يعتمد على:** 8
 - **الملفات:** `src/zatca/api/zatca-api.service.ts`، `src/zatca/onboarding.service.ts`، `src/zatca/invoice.service.ts`، `test/zatca-api.spec.ts`

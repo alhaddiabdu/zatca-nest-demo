@@ -124,10 +124,10 @@ export class InvoiceService {
   }
 
   private async submit(category: 'standard' | 'simplified', creds: Credentials, body: any) {
-    if (category === 'simplified') return this.api.report(creds, body);
-    const res = await this.api.clear(creds, body);
+    if (category === 'simplified') return this.api.report(this.config.env, creds, body);
+    const res = await this.api.clear(this.config.env, creds, body);
     // 303 = الاعتماد معطّل مؤقتاً من الهيئة، فتُرسل القياسية عبر الإبلاغ
-    if (res.status === 303) return this.api.report(creds, body);
+    if (res.status === 303) return this.api.report(this.config.env, creds, body);
     return res;
   }
 
