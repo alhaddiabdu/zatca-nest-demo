@@ -631,7 +631,7 @@
 - **رسالة الـ commit:** `feat(web): invoice details with XML, QR and ZATCA response`
 
 ### الخطوة 35: تطوير نموذج الفاتورة والنتيجة
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** النموذج يعمل على الوضع النشط ويربط النتيجة بالتفاصيل.
 - **يعتمد على:** 34
 - **الملفات:** `frontend/src/InvoiceForm.tsx`، `frontend/src/InvoiceResult.tsx`

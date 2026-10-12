@@ -184,7 +184,14 @@ export function App() {
               <div className="invoice-layout">
                 <InvoiceForm status={status} prefill={prefill} onIssued={onIssued} />
                 {last ? (
-                  <InvoiceResult key={last.result.uuid} {...last} />
+                  <InvoiceResult
+                    key={last.result.uuid}
+                    {...last}
+                    onOpenDetails={(id) => {
+                      setDetailsId(id);
+                      setTab('history');
+                    }}
+                  />
                 ) : (
                   <section className="card empty">
                     <p>عبّئ الفاتورة واضغط «إنشاء» لترى التجزئة والتوقيع ورمز QR ورد الهيئة هنا.</p>

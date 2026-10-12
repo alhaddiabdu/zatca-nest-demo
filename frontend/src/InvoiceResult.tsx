@@ -1,4 +1,3 @@
-import { api } from './api';
 import { formatMoney, STATUS_LABELS, STATUS_TONES } from './format';
 import type { InvoicePayload, IssueResult, ZatcaBody, ZatcaMessage } from './types';
 
@@ -6,6 +5,8 @@ interface Props {
   payload: InvoicePayload;
   result: IssueResult;
   dryRun: boolean;
+  /** يفتح تفاصيل الفاتورة (XML و QR ورد الهيئة) في جدول الفواتير */
+  onOpenDetails?: (invoiceId: string) => void;
 }
 
 function asList(m: ZatcaMessage[] | ZatcaMessage | undefined): ZatcaMessage[] {
@@ -46,7 +47,7 @@ export function QrFigure({ src, caption = 'رمز QR (يُطبع على الفا
   );
 }
 
-export function InvoiceResult({ payload, result, dryRun }: Props) {
+export function InvoiceResult({ payload, result, dryRun, onOpenDetails }: Props) {
   const statusKey = dryRun ? 'DRY_RUN' : result.status ?? 'PENDING';
 
   return (
@@ -85,10 +86,10 @@ export function InvoiceResult({ payload, result, dryRun }: Props) {
       <ZatcaMessages zatca={result.zatca} />
 
       <div className="actions">
-        {result.xmlPath && (
-          <a className="btn ghost" href={(result.invoiceId ? api.xmlUrl(result.invoiceId) : api.xmlUrl(payload.id, { dryRun }))} target="_blank" rel="noreferrer">
-            عرض XML الموقّع
-          </a>
+        {result.invoiceId && onOpenDetails && (
+          <button type="button" className="btn ghost" onClick={() => onOpenDetails(result.invoiceId!)}>
+            فتح التفاصيل
+          </button>
         )}
       </div>
 

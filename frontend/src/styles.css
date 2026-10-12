@@ -176,6 +176,10 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem
 /* ===== تفاصيل الفاتورة ===== */
 .details pre.xml { max-height: 520px; white-space: pre; }
 
+/* زر الإرسال بلون الوضع النشط */
+.app[class*='mode-'] .btn.mode-submit { background: var(--mode); }
+.app[class*='mode-'] .btn.mode-submit:hover:not(:disabled) { background: var(--mode); filter: brightness(0.92); }
+
 /* ===== الحالة ===== */
 .status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .stat {

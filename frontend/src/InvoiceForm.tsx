@@ -296,8 +296,14 @@ export function InvoiceForm({ status, prefill, onIssued }: Props) {
             {!canSend && <small> — سجّل الوحدة أولاً لتتمكن من الإرسال الفعلي</small>}
           </span>
         </label>
-        <button className="btn primary" disabled={busy}>
-          {busy ? 'جارٍ المعالجة…' : dryRun ? 'إنشاء وتوقيع (تجربة)' : 'إصدار وإرسال للهيئة'}
+        <button className="btn primary mode-submit" disabled={busy}>
+          {busy
+            ? 'جارٍ المعالجة…'
+            : dryRun
+              ? 'إنشاء وتوقيع (تجربة)'
+              : status?.env === 'core'
+                ? 'إصدار فاتورة رسمية'
+                : 'إصدار وإرسال للهيئة'}
         </button>
       </div>
 
