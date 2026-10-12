@@ -309,7 +309,7 @@
 - **رسالة الـ commit:** `feat(db): migration for environments and app_settings with seeds`
 
 ### الخطوة 5: migration جدولي invoices و compliance_checks
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** إنشاء الجدولين بالفهارس الجزئية.
 - **يعتمد على:** 4
 - **الملفات:** `src/database/migrations/<ts>-CreateInvoices.ts`
