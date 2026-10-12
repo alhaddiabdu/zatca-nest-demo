@@ -486,7 +486,7 @@
 - **رسالة الـ commit:** `feat(api): invoice list with filters/pagination and invoice details`
 
 ### الخطوة 21: توسيع /zatca/status
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** إحصاءات اللوحة في طلب واحد.
 - **يعتمد على:** 17، 13
 - **الملفات:** `src/zatca/onboarding.service.ts` (`status`)، `test/int/status.int-spec.ts`

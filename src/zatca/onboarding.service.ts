@@ -4,12 +4,13 @@ import { randomUUID, X509Certificate } from 'crypto';
 import { Repository } from 'typeorm';
 import { ComplianceCheckEntity } from '../database/entities/compliance-check.entity';
 import { ZatcaEnvName } from '../database/entities/environment.entity';
-import { InvoiceEntity } from '../database/entities/invoice.entity';
+import { InvoiceEntity, InvoiceStatus } from '../database/entities/invoice.entity';
 import { envProfile, SellerInfo } from './zatca.config';
 import { ZatcaApi } from './api/zatca-api.port';
 import { Credentials, EgsStoreService } from './storage/egs-store.service';
 import { EnvironmentsService } from './environments/environments.service';
 import { ModeService } from './modes/mode.service';
+import { MODE_META } from './modes/active-env';
 import { generateKeyAndCsr } from './crypto/csr';
 import { certBase64ToPem, tokenToCertBase64 } from './crypto/certificate';
 import { INITIAL_PIH, signInvoice } from './crypto/signer';
@@ -208,18 +209,41 @@ export class OnboardingService {
     }
   }
 
+  /** حالة الوضع النشط وإحصاءات لوحة التحكم في طلب واحد */
   async status() {
     const env = await this.modes.requireActive();
     const row = await this.environments.get(env);
-    // مؤقتاً حتى الخطوة 17: السلسلة والمعلّق من ملف JSON
-    const legacy = this.store.load();
+    const counts = await this.invoices
+      .createQueryBuilder('i')
+      .select('i.status', 'status')
+      .addSelect('count(*)::int', 'count')
+      .where('i.env = :env', { env })
+      .groupBy('i.status')
+      .getRawMany<{ status: InvoiceStatus; count: number }>();
+    const countsByStatus: Record<InvoiceStatus, number> = {
+      DRY_RUN: 0, PENDING: 0, ACCEPTED: 0, ACCEPTED_WITH_WARNINGS: 0, REJECTED: 0,
+    };
+    for (const c of counts) countsByStatus[c.status] = c.count;
+    // المبسطة يجب أن تُبلَّغ خلال 24 ساعة
+    const pendingOverdue = await this.invoices
+      .createQueryBuilder('i')
+      .where('i.env = :env', { env })
+      .andWhere(`i.status = 'PENDING' AND i.category = 'simplified'`)
+      .andWhere(`i.created_at < now() - interval '24 hours'`)
+      .getCount();
+
     return {
       env,
+      mode: { env, ...MODE_META[env] },
+      state: this.environments.state(row),
       seller: this.environments.toSeller(row),
       onboarded: !!row.productionTokenEnc,
       onboardedAt: row.onboardedAt ?? null,
-      chain: legacy.chain,
-      pendingCount: legacy.pending?.length ?? 0,
+      productionCertNotAfter: row.productionCertNotAfter ?? null,
+      chain: { icv: row.icv, pih: row.pih, chainEpoch: row.chainEpoch },
+      pendingCount: countsByStatus.PENDING,
+      pendingOverdue,
+      countsByStatus,
     };
   }
 }
