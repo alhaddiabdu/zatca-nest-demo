@@ -299,7 +299,7 @@
 - **رسالة الـ commit:** `feat(db): wire TypeORM with PostgreSQL (no synchronize)`
 
 ### الخطوة 4: migration جدولي environments و app_settings
-- [ ] الحالة
+- [x] الحالة
 - **الهدف:** إنشاء الجدولين بالقيود الموصوفة في 2.1 مع البذور.
 - **يعتمد على:** 3
 - **الملفات:** `src/database/migrations/<ts>-CreateEnvironments.ts`
