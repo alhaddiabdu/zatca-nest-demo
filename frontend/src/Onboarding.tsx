@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { api, ApiError } from './api';
 import { ENV_LABELS, formatDate } from './format';
 import type { ComplianceCheck, OnboardResult, Status } from './types';
+import { ZatcaResponse } from './ZatcaResponse';
 
 const STEPS = [
   'توليد المفتاح الخاص وطلب الشهادة (CSR)',
@@ -29,7 +30,7 @@ interface Props {
 /** أين يجد المستخدم OTP في كل وضع */
 const OTP_HINTS: Record<Status['env'], string> = {
   'developer-portal': '',
-  simulation: 'استخرجه من بوابة فاتورة — بيئة المحاكاة (fatoora.zatca.gov.sa ← المحاكاة ← إضافة جهاز). صالح لدقائق فقط.',
+  simulation: '6 أرقام من بوابة فاتورة (المحاكاة) ← إضافة جهاز.',
   core: 'استخرجه من بوابة فاتورة الرسمية (fatoora.zatca.gov.sa ← إضافة جهاز). صالح لدقائق فقط.',
 };
 
@@ -58,8 +59,11 @@ export function Onboarding({ status, onDone, onShowPending }: Props) {
     }
   };
 
-  const failedChecks = (error?.body as { results?: ComplianceCheck[] } | null)?.results;
-  const errorCode = (error?.body as { code?: string } | null)?.code;
+  const errorBody = error?.body as { results?: ComplianceCheck[]; code?: string; zatca?: { status: number; body: unknown } } | null;
+  const failedChecks = errorBody?.results;
+  const errorCode = errorBody?.code;
+  // فشل طلب شهادة الامتثال أو الإنتاج: رد الهيئة كما وصل
+  const zatcaFailure = errorBody?.zatca;
   const checks = result?.complianceChecks ?? failedChecks;
 
   return (
@@ -83,6 +87,20 @@ export function Onboarding({ status, onDone, onShowPending }: Props) {
           {STEPS.map((s) => <li key={s}>{s}</li>)}
         </ol>
 
+        {status?.env === 'simulation' && (
+          <div className="alert warning" role="note">
+            <strong>قبل التسجيل في المحاكاة</strong>
+            <ul>
+              <li>رمز OTP يُستخرج من بوابة فاتورة — بيئة المحاكاة (fatoora.zatca.gov.sa ← المحاكاة ← إضافة جهاز).</li>
+              <li>صلاحية الرمز قصيرة (دقائق)، فاستخرجه مباشرة قبل الضغط على «بدء التسجيل».</li>
+              <li>
+                الرقم الضريبي في الإعدادات (<code dir="ltr">{status.seller?.vatNumber || '—'}</code>) يجب أن يطابق رقم المنشأة
+                في الحساب الذي استخرجت منه الرمز، وإلا ترفض الهيئة الطلب.
+              </li>
+            </ul>
+          </div>
+        )}
+
         <div className="grid-2 align-end">
           {isDevPortal ? (
             <div className="field">
@@ -96,8 +114,11 @@ export function Onboarding({ status, onDone, onShowPending }: Props) {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 required
+                minLength={6}
+                maxLength={6}
                 pattern="\d{6}"
-                title="6 أرقام"
+                title="رمز OTP من 6 أرقام"
+                autoComplete="one-time-code"
                 inputMode="numeric"
                 dir="ltr"
                 placeholder="000000"
@@ -112,7 +133,7 @@ export function Onboarding({ status, onDone, onShowPending }: Props) {
                 <span>إعادة التسجيل (يبدأ سلسلة فواتير جديدة)</span>
               </label>
             )}
-            <button className="btn primary" disabled={busy || (status?.onboarded && !force)}>
+            <button className="btn primary" disabled={busy || (status?.onboarded && !force) || (!isDevPortal && !/^\d{6}$/.test(otp))}>
               {busy ? 'جارٍ التسجيل… قد يستغرق دقيقة' : 'بدء التسجيل'}
             </button>
           </div>
@@ -127,11 +148,15 @@ export function Onboarding({ status, onDone, onShowPending }: Props) {
                 عرض الفواتير المعلّقة
               </button>
             )}
-            {error.body != null && typeof error.body === 'object' && !failedChecks && (
-              <details>
-                <summary>التفاصيل</summary>
-                <pre dir="ltr">{JSON.stringify(error.body, null, 2)}</pre>
-              </details>
+            {zatcaFailure ? (
+              <ZatcaResponse body={zatcaFailure.body} httpStatus={zatcaFailure.status} showInfo />
+            ) : (
+              error.body != null && typeof error.body === 'object' && !failedChecks && (
+                <details>
+                  <summary>التفاصيل</summary>
+                  <pre dir="ltr">{JSON.stringify(error.body, null, 2)}</pre>
+                </details>
+              )
             )}
           </div>
         )}
@@ -142,20 +167,16 @@ export function Onboarding({ status, onDone, onShowPending }: Props) {
           <div className="card-head"><h2>نتائج فحوصات الامتثال</h2></div>
           <table className="table">
             <thead>
-              <tr><th>الوثيقة</th><th>الحالة</th><th>الملاحظات</th></tr>
+              <tr><th>الوثيقة</th><th>الحالة</th><th>رد الهيئة</th></tr>
             </thead>
             <tbody>
-              {checks.map((c) => {
-                const v = c.response?.validationResults;
-                const msgs = [...(v?.errorMessages ?? []), ...(v?.warningMessages ?? [])];
-                return (
-                  <tr key={c.document}>
-                    <td>{DOC_LABELS[c.document] ?? c.document}</td>
-                    <td><span className={`badge ${c.ok ? 'success' : 'danger'}`}>{c.ok ? 'نجح' : 'فشل'} ({c.status})</span></td>
-                    <td>{msgs.length ? msgs.map((m, i) => <div key={i}><code>{m.code}</code> {m.message}</div>) : '—'}</td>
-                  </tr>
-                );
-              })}
+              {checks.map((c) => (
+                <tr key={c.document}>
+                  <td>{DOC_LABELS[c.document] ?? c.document}</td>
+                  <td><span className={`badge ${c.ok ? 'success' : 'danger'}`}>{c.ok ? 'نجح' : 'فشل'}</span></td>
+                  <td><ZatcaResponse body={c.response} httpStatus={c.status} showRaw={!c.ok} /></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </section>

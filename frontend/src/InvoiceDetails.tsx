@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from './api';
 import { CATEGORY_LABELS, formatDate, formatIssueTime, formatMoney, KIND_LABELS, STATUS_LABELS, STATUS_TONES } from './format';
-import { QrFigure, ZatcaMessages } from './InvoiceResult';
+import { QrFigure } from './InvoiceResult';
+import { ZatcaResponse } from './ZatcaResponse';
 import type { InvoiceDetail } from './types';
 
 export type DetailsTab = 'summary' | 'signed' | 'cleared' | 'response';
@@ -89,7 +90,7 @@ export function InvoiceDetailsView({ detail, tab, onTab, xml }: ViewProps) {
             </div>
           )}
 
-          <ZatcaMessages zatca={detail.zatcaResponse} />
+          <ZatcaResponse body={detail.zatcaResponse} httpStatus={detail.httpStatus} showRaw={false} />
 
           {detail.hasClearedXml ? (
             <p className="hint qr-note">الفاتورة معتمدة: رمز QR الرسمي داخل النسخة المعتمدة (تبويب «XML المعتمد»).</p>

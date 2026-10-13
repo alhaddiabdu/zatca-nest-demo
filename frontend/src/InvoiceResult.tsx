@@ -1,5 +1,6 @@
 import { formatMoney, STATUS_LABELS, STATUS_TONES } from './format';
-import type { InvoicePayload, IssueResult, ZatcaBody, ZatcaMessage } from './types';
+import type { InvoicePayload, IssueResult } from './types';
+import { ZatcaResponse } from './ZatcaResponse';
 
 interface Props {
   payload: InvoicePayload;
@@ -7,34 +8,6 @@ interface Props {
   dryRun: boolean;
   /** يفتح تفاصيل الفاتورة (XML و QR ورد الهيئة) في جدول الفواتير */
   onOpenDetails?: (invoiceId: string) => void;
-}
-
-function asList(m: ZatcaMessage[] | ZatcaMessage | undefined): ZatcaMessage[] {
-  if (!m) return [];
-  return Array.isArray(m) ? m : [m];
-}
-
-/** أخطاء وتحذيرات الهيئة من validationResults */
-export function ZatcaMessages({ zatca }: { zatca?: ZatcaBody | null }) {
-  const v = zatca?.validationResults;
-  const errors = asList(v?.errorMessages);
-  const warnings = asList(v?.warningMessages);
-  return (
-    <>
-      {errors.length > 0 && (
-        <div className="alert danger">
-          <strong>أخطاء من الهيئة</strong>
-          <ul>{errors.map((m, i) => <li key={i}><code>{m.code}</code> {m.message}</li>)}</ul>
-        </div>
-      )}
-      {warnings.length > 0 && (
-        <div className="alert warning">
-          <strong>تحذيرات من الهيئة</strong>
-          <ul>{warnings.map((m, i) => <li key={i}><code>{m.code}</code> {m.message}</li>)}</ul>
-        </div>
-      )}
-    </>
-  );
 }
 
 /** صورة رمز QR */
@@ -83,7 +56,7 @@ export function InvoiceResult({ payload, result, dryRun, onOpenDetails }: Props)
         </dl>
       </div>
 
-      <ZatcaMessages zatca={result.zatca} />
+      {!dryRun && <ZatcaResponse body={result.zatca} httpStatus={result.httpStatus} />}
 
       <div className="actions">
         {result.invoiceId && onOpenDetails && (
@@ -93,12 +66,6 @@ export function InvoiceResult({ payload, result, dryRun, onOpenDetails }: Props)
         )}
       </div>
 
-      {result.zatca && (
-        <details>
-          <summary>رد الهيئة كاملاً</summary>
-          <pre dir="ltr">{JSON.stringify({ ...result.zatca, clearedInvoice: result.zatca.clearedInvoice ? '…' : undefined }, null, 2)}</pre>
-        </details>
-      )}
     </section>
   );
 }

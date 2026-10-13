@@ -318,6 +318,13 @@ input[dir='ltr'] { text-align: left; }
 .app > .alert { margin-bottom: 20px; }
 
 details { margin-top: 8px; }
+
+/* رد الهيئة المقروء */
+.zatca-response { display: flex; flex-direction: column; gap: 8px; }
+.zatca-statuses { display: flex; flex-wrap: wrap; gap: 6px; }
+.zatca-msgs li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: 4px; overflow-wrap: anywhere; }
+.zatca-msgs .zatca-cat { opacity: 0.75; }
+.alert.info { background: var(--info-soft); color: var(--info); }
 summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
 pre {
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
