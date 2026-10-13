@@ -1,5 +1,34 @@
+diff --git a/src/zatca/crypto/signer.ts b/src/zatca/crypto/signer.ts
+index b946851..9811571 100644
+--- a/src/zatca/crypto/signer.ts
++++ b/src/zatca/crypto/signer.ts
+@@ -144,6 +144,8 @@ export interface QrFields {
+   timestamp: string;
+   totalWithVat: string;
+   vatTotal: string;
++  /** الوسم 9 (توقيع الجهة المصدرة على الشهادة) للفواتير المبسطة وإشعاراتها فقط */
++  includeCertSignature: boolean;
+ }
+ 
+ export interface SignResult {
+@@ -181,12 +183,13 @@ export function signInvoice(params: {
+     createHash('sha256').update(sp.forHash, 'utf8').digest('hex'),
+   ).toString('base64');
+ 
++  const { includeCertSignature, ...qrText } = qrFields;
+   const qr = buildQr({
+-    ...qrFields,
++    ...qrText,
+     invoiceHash,
+     signature,
+     publicKey: cert.publicKeyDer,
+-    certSignature: cert.certSignature,
++    certSignature: includeCertSignature ? cert.certSignature : undefined,
+   });
+ 
+   const ublExtensions = buildUblExtensions({
 diff --git a/src/zatca/xml/invoice-builder.ts b/src/zatca/xml/invoice-builder.ts
-index 0f035cd..95263f0 100644
+index 0f035cd..7caaf12 100644
 --- a/src/zatca/xml/invoice-builder.ts
 +++ b/src/zatca/xml/invoice-builder.ts
 @@ -1,6 +1,7 @@
@@ -85,7 +114,7 @@ index 0f035cd..95263f0 100644
          </cac:Party>
      </cac:AccountingCustomerParty>
      <cac:Delivery>
-@@ -215,7 +242,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -215,9 +242,10 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
      qrFields: {
        sellerName: seller.name,
        vatNumber: seller.vatNumber,
@@ -93,7 +122,10 @@ index 0f035cd..95263f0 100644
 +      timestamp: `${input.issueDate}T${input.issueTime}`, // IssueDate + "T" + IssueTime حرفياً: UTC ينتهي بـ Z (issue-time.ts)
        totalWithVat: money(total),
        vatTotal: money(vat),
++      includeCertSignature: input.category === 'simplified', // الوسم 9 للمبسطة وإشعاراتها فقط
      },
+     totals: { net, vat, total },
+   };
 diff --git a/src/zatca/xml/invoice.types.ts b/src/zatca/xml/invoice.types.ts
 index 1603dde..34eb08b 100644
 --- a/src/zatca/xml/invoice.types.ts

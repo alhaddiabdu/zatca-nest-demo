@@ -144,6 +144,8 @@ export interface QrFields {
   timestamp: string;
   totalWithVat: string;
   vatTotal: string;
+  /** الوسم 9 (توقيع الجهة المصدرة على الشهادة) للفواتير المبسطة وإشعاراتها فقط */
+  includeCertSignature: boolean;
 }
 
 export interface SignResult {
@@ -181,12 +183,13 @@ export function signInvoice(params: {
     createHash('sha256').update(sp.forHash, 'utf8').digest('hex'),
   ).toString('base64');
 
+  const { includeCertSignature, ...qrText } = qrFields;
   const qr = buildQr({
-    ...qrFields,
+    ...qrText,
     invoiceHash,
     signature,
     publicKey: cert.publicKeyDer,
-    certSignature: cert.certSignature,
+    certSignature: includeCertSignature ? cert.certSignature : undefined,
   });
 
   const ublExtensions = buildUblExtensions({

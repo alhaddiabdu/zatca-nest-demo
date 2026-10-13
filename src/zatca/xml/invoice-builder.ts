@@ -245,6 +245,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
       timestamp: `${input.issueDate}T${input.issueTime}`, // IssueDate + "T" + IssueTime حرفياً: UTC ينتهي بـ Z (issue-time.ts)
       totalWithVat: money(total),
       vatTotal: money(vat),
+      includeCertSignature: input.category === 'simplified', // الوسم 9 للمبسطة وإشعاراتها فقط
     },
     totals: { net, vat, total },
   };

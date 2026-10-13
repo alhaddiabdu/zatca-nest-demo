@@ -1,6 +1,7 @@
 import { DOMParser } from '@xmldom/xmldom';
 import { createSelfSignedCert, generateKeyAndCsr } from '../src/zatca/crypto/csr';
 import { pemToCertBase64 } from '../src/zatca/crypto/certificate';
+import { decodeQr } from '../src/zatca/crypto/qr';
 import { INITIAL_PIH, signInvoice } from '../src/zatca/crypto/signer';
 import { buildInvoiceXml } from '../src/zatca/xml/invoice-builder';
 import { InvoiceInput } from '../src/zatca/xml/invoice.types';
@@ -132,5 +133,25 @@ describe('BR-KSA-EN16931-11: unit price as entered, line net = quantity × price
     [0.0000001, 1, '0.0000001', '0.00'],
   ])('price %p × quantity %p → PriceAmount %s, net %s', (unitPrice, quantity, price, net) => {
     expect(line(buildInvoiceXml(input({ lines: [{ name: 'منتج', quantity, unitPrice }] }), seller).unsignedXml)).toEqual({ price, net });
+  });
+});
+
+describe('QR tag 9 (certificate signature): simplified documents only', () => {
+  const notes = { originalInvoiceId: 'T-0', reason: 'تعديل' };
+  const doc = (category: 'simplified' | 'standard', kind: 'invoice' | 'credit' | 'debit') =>
+    input({
+      category, kind, ...(kind === 'invoice' ? {} : notes),
+      buyer: category === 'standard' ? { name: 'مشترٍ', vatNumber: '300000000000003', address: ADDRESS } : undefined,
+    });
+
+  it.each(['invoice', 'credit', 'debit'] as const)('simplified %s: tags 1–9', (kind) => {
+    const tags = decodeQr(sign(doc('simplified', kind)).qr);
+    expect(Object.keys(tags).map(Number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(tags[9]).toBeTruthy();
+  });
+
+  it.each(['invoice', 'credit', 'debit'] as const)('standard %s: tags 1–8, no tag 9', (kind) => {
+    const tags = decodeQr(sign(doc('standard', kind)).qr);
+    expect(Object.keys(tags).map(Number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
