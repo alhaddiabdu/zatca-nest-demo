@@ -108,6 +108,36 @@ describe('POST /zatca/invoices → PostgreSQL (fake transport)', () => {
     expect(await chain()).toEqual(before);
   });
 
+  describe('BR-KSA-81: buyer without VAT number', () => {
+    const { vatNumber: _, ...noVat } = BUYER;
+    const std = (id: string, buyer: object) => ({ ...standard(id), buyer });
+
+    it('standard without VAT number or other id → 400 with a clear message, chain unchanged', async () => {
+      const before = await chain();
+      const res = await http().post('/zatca/invoices').send(std('STD-NOID', noVat)).expect(400);
+      expect(res.body.message).toContain('معرّفاً بديلاً');
+      expect(await chain()).toEqual(before);
+    });
+
+    it('standard with CRN as other id → ACCEPTED, schemeID in the signed XML', async () => {
+      await http().post('/zatca/invoices').send(std('STD-CRN', { ...noVat, otherIdType: 'CRN', otherIdValue: '1010101010' })).expect(200);
+      const r = await row('STD-CRN');
+      expect(r.status).toBe('ACCEPTED');
+      expect(r.signed_xml).toContain('<cbc:ID schemeID="CRN">1010101010</cbc:ID>');
+      expect(r.buyer).toMatchObject({ otherIdType: 'CRN', otherIdValue: '1010101010' });
+    });
+
+    it.each([
+      [{ otherIdType: 'XYZ', otherIdValue: '1' }, 'نوع معرّف المشتري'],
+      [{ otherIdType: 'NAT', otherIdValue: '10-12' }, 'أحرف وأرقام فقط'],
+      [{ otherIdType: 'NAT' }, 'أحرف وأرقام فقط'],
+      [{ otherIdValue: '1012345678' }, 'نوع معرّف المشتري'],
+    ])('DTO rejects %j', async (ids, msg) => {
+      const res = await http().post('/zatca/invoices').send(std('STD-BAD', { ...noVat, ...ids })).expect(400);
+      expect(JSON.stringify(res.body.message)).toContain(msg);
+    });
+  });
+
   it('dryRun stores a DRY_RUN row without touching the chain, even with a used number', async () => {
     const before = await chain();
     const res = await http().post('/zatca/invoices?dryRun=true').send(simplified('INV-1')).expect(200);

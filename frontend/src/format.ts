@@ -1,4 +1,4 @@
-import type { Category, IssueStatus, Kind, Mode, ModeColor, ModeState } from './types';
+import type { BuyerIdScheme, Category, IssueStatus, Kind, Mode, ModeColor, ModeState } from './types';
 
 export const ENV_LABELS: Record<Mode, string> = {
   'developer-portal': 'بوابة المطورين',
@@ -32,6 +32,21 @@ export const MODE_STATE_TONES: Record<ModeState, string> = {
   unconfigured: 'neutral',
   configured: 'info',
   onboarded: 'success',
+};
+
+/** معرّف المشتري البديل (BR-KSA-81) */
+export const BUYER_ID_LABELS: Record<BuyerIdScheme, string> = {
+  TIN: 'الرقم المميز (TIN)',
+  CRN: 'السجل التجاري (CRN)',
+  MOM: 'ترخيص وزارة الشؤون البلدية (MOM)',
+  MLS: 'ترخيص وزارة الموارد البشرية (MLS)',
+  '700': 'الرقم الموحد 700',
+  SAG: 'ترخيص وزارة الاستثمار (SAG)',
+  NAT: 'الهوية الوطنية (NAT)',
+  GCC: 'هوية مواطني الخليج (GCC)',
+  IQA: 'الإقامة (IQA)',
+  PAS: 'جواز السفر (PAS)',
+  OTH: 'معرّف آخر (OTH)',
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {

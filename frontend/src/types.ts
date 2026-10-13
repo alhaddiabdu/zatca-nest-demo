@@ -72,6 +72,9 @@ export interface EnvSettings {
   lockedFields: string[];
 }
 
+/** أنواع معرّف المشتري البديل (BR-KSA-81)، مطابقة للخادم */
+export type BuyerIdScheme = 'TIN' | 'CRN' | 'MOM' | 'MLS' | '700' | 'SAG' | 'NAT' | 'GCC' | 'IQA' | 'PAS' | 'OTH';
+
 export interface Address {
   street: string;
   buildingNumber: string;
@@ -84,7 +87,7 @@ export interface InvoicePayload {
   id: string;
   category: Category;
   kind: Kind;
-  buyer?: { name: string; vatNumber?: string; address?: Address };
+  buyer?: { name: string; vatNumber?: string; otherIdType?: BuyerIdScheme; otherIdValue?: string; address?: Address };
   lines: Array<{ name: string; quantity: number; unitPrice: number; vatPercent?: number }>;
   originalInvoiceId?: string;
   reason?: string;

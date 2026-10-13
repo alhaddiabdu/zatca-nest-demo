@@ -1,7 +1,11 @@
 import { Type } from 'class-transformer';
 import {
-  ArrayMinSize, IsArray, IsIn, IsNumber, IsOptional, IsPositive, IsString, Matches, Max, Min, ValidateNested,
+  ArrayMinSize, IsArray, IsIn, IsNumber, IsOptional, IsPositive, IsString, Matches, Max, Min, ValidateIf, ValidateNested,
 } from 'class-validator';
+import { BUYER_ID_SCHEMES, BuyerIdScheme } from '../xml/invoice.types';
+
+/** المعرّف البديل يُرسل كاملاً (النوع والقيمة) أو لا يُرسل */
+const hasOtherId = (b: BuyerDto) => b.otherIdType !== undefined || b.otherIdValue !== undefined;
 
 export class AddressDto {
   @IsString() street: string;
@@ -15,6 +19,13 @@ export class AddressDto {
 export class BuyerDto {
   @IsString() name: string;
   @IsOptional() @Matches(/^3\d{13}3$/, { message: 'الرقم الضريبي 15 رقماً يبدأ وينتهي بـ 3' }) vatNumber?: string;
+  /** معرّف بديل للمشتري (BR-KSA-81)، إلزامي في القياسية إن لم يوجد رقم ضريبي */
+  @ValidateIf(hasOtherId)
+  @IsIn(BUYER_ID_SCHEMES, { message: `نوع معرّف المشتري يجب أن يكون من: ${BUYER_ID_SCHEMES.join(', ')}` })
+  otherIdType?: BuyerIdScheme;
+  @ValidateIf(hasOtherId)
+  @Matches(/^[A-Za-z0-9]+$/, { message: 'قيمة معرّف المشتري أحرف وأرقام فقط' })
+  otherIdValue?: string;
   @IsOptional() @ValidateNested() @Type(() => AddressDto) address?: AddressDto;
 }
 

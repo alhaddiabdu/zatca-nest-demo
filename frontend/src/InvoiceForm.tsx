@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { api, ApiError } from './api';
-import { CATEGORY_LABELS, formatMoney, KIND_LABELS, round2 } from './format';
-import type { Category, InvoicePayload, IssueResult, Kind, Status } from './types';
+import { BUYER_ID_LABELS, CATEGORY_LABELS, formatMoney, KIND_LABELS, round2 } from './format';
+import type { BuyerIdScheme, Category, InvoicePayload, IssueResult, Kind, Status } from './types';
 
 const VAT_RATE = 15;
 
@@ -15,6 +15,8 @@ interface LineRow {
 interface BuyerState {
   name: string;
   vatNumber: string;
+  otherIdType: BuyerIdScheme | '';
+  otherIdValue: string;
   street: string;
   buildingNumber: string;
   district: string;
@@ -22,11 +24,13 @@ interface BuyerState {
   postalCode: string;
 }
 
-const EMPTY_BUYER: BuyerState = { name: '', vatNumber: '', street: '', buildingNumber: '', district: '', city: '', postalCode: '' };
+const EMPTY_BUYER: BuyerState = { name: '', vatNumber: '', otherIdType: '', otherIdValue: '', street: '', buildingNumber: '', district: '', city: '', postalCode: '' };
 
 const SAMPLE_BUYER: BuyerState = {
   name: 'مؤسسة العميل',
   vatNumber: '300000000000003',
+  otherIdType: '',
+  otherIdValue: '',
   street: 'طريق الملك فهد',
   buildingNumber: '1234',
   district: 'العليا',
@@ -85,7 +89,7 @@ export function InvoiceForm({ status, prefill, onIssued }: Props) {
   const updateLine = (key: number, patch: Partial<LineRow>) =>
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
-  const setBuyerField = (field: keyof BuyerState) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const setBuyerField = (field: keyof BuyerState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setBuyer((b) => ({ ...b, [field]: e.target.value }));
 
   const buildPayload = (): InvoicePayload => {
@@ -103,6 +107,10 @@ export function InvoiceForm({ status, prefill, onIssued }: Props) {
     if (category === 'standard' || buyer.name.trim()) {
       payload.buyer = { name: buyer.name.trim() };
       if (buyer.vatNumber.trim()) payload.buyer.vatNumber = buyer.vatNumber.trim();
+      if (buyer.otherIdType && buyer.otherIdValue.trim()) {
+        payload.buyer.otherIdType = buyer.otherIdType;
+        payload.buyer.otherIdValue = buyer.otherIdValue.trim();
+      }
       if (category === 'standard' || hasAddress) {
         payload.buyer.address = {
           street: buyer.street.trim(),
@@ -222,7 +230,34 @@ export function InvoiceForm({ status, prefill, onIssued }: Props) {
               placeholder="3xxxxxxxxxxxxx3"
             />
           </label>
+          <label className="field">
+            <span>معرّف بديل للمشتري {category === 'standard' && !buyer.vatNumber.trim() ? <small>(إلزامي بدون رقم ضريبي)</small> : <small>(اختياري)</small>}</span>
+            <select
+              value={buyer.otherIdType}
+              onChange={setBuyerField('otherIdType')}
+              required={(category === 'standard' && !buyer.vatNumber.trim()) || !!buyer.otherIdValue.trim()}
+            >
+              <option value="">— النوع —</option>
+              {(Object.keys(BUYER_ID_LABELS) as BuyerIdScheme[]).map((k) => (
+                <option key={k} value={k}>{BUYER_ID_LABELS[k]}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>رقم المعرّف</span>
+            <input
+              value={buyer.otherIdValue}
+              onChange={setBuyerField('otherIdValue')}
+              required={(category === 'standard' && !buyer.vatNumber.trim()) || !!buyer.otherIdType}
+              pattern="[A-Za-z0-9]+"
+              title="أحرف وأرقام فقط"
+              dir="ltr"
+            />
+          </label>
         </div>
+        {category === 'standard' && (
+          <p className="hint">الفاتورة القياسية وإشعاراتها تتطلب رقماً ضريبياً للمشتري، أو معرّفاً بديلاً (قاعدة BR-KSA-81).</p>
+        )}
         {category === 'standard' && (
           <div className="grid-5">
             <label className="field">

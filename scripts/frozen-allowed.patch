@@ -1,15 +1,53 @@
 diff --git a/src/zatca/xml/invoice-builder.ts b/src/zatca/xml/invoice-builder.ts
-index 0f035cd..995d433 100644
+index 0f035cd..d41a035 100644
 --- a/src/zatca/xml/invoice-builder.ts
 +++ b/src/zatca/xml/invoice-builder.ts
-@@ -82,6 +82,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -1,6 +1,6 @@
+ import { SellerInfo } from '../zatca.config';
+ import { escapeXml, QR_PLACEHOLDER, QrFields, UBL_EXTENSIONS_PLACEHOLDER } from '../crypto/signer';
+-import { CATEGORY_SUBTYPES, DOCUMENT_TYPE_CODES, InvoiceInput } from './invoice.types';
++import { BUYER_ID_SCHEMES, CATEGORY_SUBTYPES, DOCUMENT_TYPE_CODES, InvoiceInput } from './invoice.types';
+ 
+ const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+ const money = (n: number) => round2(n).toFixed(2);
+@@ -23,6 +23,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+   if (input.category === 'standard' && !input.buyer?.address) {
+     throw new Error('الفاتورة القياسية تتطلب اسم المشتري وعنوانه');
+   }
++  // BR-KSA-81: القياسية وإشعاراتها بدون رقم ضريبي للمشتري تتطلب معرّفاً بديلاً
++  const otherId = input.buyer?.otherIdType && input.buyer.otherIdValue ? input.buyer : undefined;
++  if (otherId && (!BUYER_ID_SCHEMES.includes(otherId.otherIdType!) || !/^[A-Za-z0-9]+$/.test(otherId.otherIdValue!))) {
++    throw new Error(`معرّف المشتري البديل غير صالح: النوع من ${BUYER_ID_SCHEMES.join(', ')} والقيمة أحرف وأرقام فقط`);
++  }
++  if (input.category === 'standard' && !input.buyer?.vatNumber && !otherId) {
++    throw new Error(
++      `الفاتورة القياسية وإشعاراتها تتطلب رقماً ضريبياً للمشتري، أو معرّفاً بديلاً (otherIdType و otherIdValue) من: ${BUYER_ID_SCHEMES.join(', ')}`,
++    );
++  }
+   if (input.kind !== 'invoice' && (!input.originalInvoiceId || !input.reason)) {
+     throw new Error('الإشعار الدائن/المدين يتطلب رقم الفاتورة الأصلية وسبب الإشعار');
+   }
+@@ -54,6 +64,12 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+       : '';
+ 
+   const buyer = input.buyer;
++  const buyerId = otherId
++    ? `
++            <cac:PartyIdentification>
++                <cbc:ID schemeID="${otherId.otherIdType}">${e(otherId.otherIdValue!)}</cbc:ID>
++            </cac:PartyIdentification>`
++    : '';
+   const buyerAddress = buyer?.address
+     ? `
+             <cac:PostalAddress>
+@@ -82,6 +98,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
                  <cbc:RegistrationName>${e(buyer.name)}</cbc:RegistrationName>
              </cac:PartyLegalEntity>`
      : '';
 +  // BR-KSA-F-03: لا عناصر فارغة. AccountingCustomerParty إلزامي في مخطط UBL 2.1، فبدون بيانات مشترٍ
 +  // يُكتب نظام الضريبة فقط (TaxScheme إلزامي في PartyTaxScheme و CompanyID اختياري) بدل Party فارغ
 +  const buyerParty =
-+    `${buyerAddress}${buyerTax}${buyerName}` ||
++    `${buyerId}${buyerAddress}${buyerTax}${buyerName}` ||
 +    `
 +            <cac:PartyTaxScheme>
 +                <cac:TaxScheme>
@@ -19,7 +57,7 @@ index 0f035cd..995d433 100644
  
    const instructionNote =
      input.kind !== 'invoice'
-@@ -174,7 +184,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -174,7 +200,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
          </cac:Party>
      </cac:AccountingSupplierParty>
      <cac:AccountingCustomerParty>
@@ -28,7 +66,7 @@ index 0f035cd..995d433 100644
          </cac:Party>
      </cac:AccountingCustomerParty>
      <cac:Delivery>
-@@ -215,7 +225,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -215,7 +241,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
      qrFields: {
        sellerName: seller.name,
        vatNumber: seller.vatNumber,
@@ -37,3 +75,24 @@ index 0f035cd..995d433 100644
        totalWithVat: money(total),
        vatTotal: money(vat),
      },
+diff --git a/src/zatca/xml/invoice.types.ts b/src/zatca/xml/invoice.types.ts
+index 1603dde..34eb08b 100644
+--- a/src/zatca/xml/invoice.types.ts
++++ b/src/zatca/xml/invoice.types.ts
+@@ -24,9 +24,16 @@ export interface Address {
+   countryCode?: string;
+ }
+ 
++/** أنواع معرّف المشتري البديل في PartyIdentification/cbc:ID@schemeID (BR-KSA-81) */
++export const BUYER_ID_SCHEMES = ['TIN', 'CRN', 'MOM', 'MLS', '700', 'SAG', 'NAT', 'GCC', 'IQA', 'PAS', 'OTH'] as const;
++export type BuyerIdScheme = (typeof BUYER_ID_SCHEMES)[number];
++
+ export interface Buyer {
+   name: string;
+   vatNumber?: string;
++  /** معرّف بديل، إلزامي في القياسية إن لم يوجد رقم ضريبي (BR-KSA-81) */
++  otherIdType?: BuyerIdScheme;
++  otherIdValue?: string; // أحرف وأرقام فقط
+   address?: Address;
+ }
+ 

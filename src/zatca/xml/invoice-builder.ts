@@ -1,6 +1,6 @@
 import { SellerInfo } from '../zatca.config';
 import { escapeXml, QR_PLACEHOLDER, QrFields, UBL_EXTENSIONS_PLACEHOLDER } from '../crypto/signer';
-import { CATEGORY_SUBTYPES, DOCUMENT_TYPE_CODES, InvoiceInput } from './invoice.types';
+import { BUYER_ID_SCHEMES, CATEGORY_SUBTYPES, DOCUMENT_TYPE_CODES, InvoiceInput } from './invoice.types';
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const money = (n: number) => round2(n).toFixed(2);
@@ -22,6 +22,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
   if (!input.lines.length) throw new Error('الفاتورة يجب أن تحتوي على بند واحد على الأقل');
   if (input.category === 'standard' && !input.buyer?.address) {
     throw new Error('الفاتورة القياسية تتطلب اسم المشتري وعنوانه');
+  }
+  // BR-KSA-81: القياسية وإشعاراتها بدون رقم ضريبي للمشتري تتطلب معرّفاً بديلاً
+  const otherId = input.buyer?.otherIdType && input.buyer.otherIdValue ? input.buyer : undefined;
+  if (otherId && (!BUYER_ID_SCHEMES.includes(otherId.otherIdType!) || !/^[A-Za-z0-9]+$/.test(otherId.otherIdValue!))) {
+    throw new Error(`معرّف المشتري البديل غير صالح: النوع من ${BUYER_ID_SCHEMES.join(', ')} والقيمة أحرف وأرقام فقط`);
+  }
+  if (input.category === 'standard' && !input.buyer?.vatNumber && !otherId) {
+    throw new Error(
+      `الفاتورة القياسية وإشعاراتها تتطلب رقماً ضريبياً للمشتري، أو معرّفاً بديلاً (otherIdType و otherIdValue) من: ${BUYER_ID_SCHEMES.join(', ')}`,
+    );
   }
   if (input.kind !== 'invoice' && (!input.originalInvoiceId || !input.reason)) {
     throw new Error('الإشعار الدائن/المدين يتطلب رقم الفاتورة الأصلية وسبب الإشعار');
@@ -54,6 +64,12 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
       : '';
 
   const buyer = input.buyer;
+  const buyerId = otherId
+    ? `
+            <cac:PartyIdentification>
+                <cbc:ID schemeID="${otherId.otherIdType}">${e(otherId.otherIdValue!)}</cbc:ID>
+            </cac:PartyIdentification>`
+    : '';
   const buyerAddress = buyer?.address
     ? `
             <cac:PostalAddress>
@@ -85,7 +101,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
   // BR-KSA-F-03: لا عناصر فارغة. AccountingCustomerParty إلزامي في مخطط UBL 2.1، فبدون بيانات مشترٍ
   // يُكتب نظام الضريبة فقط (TaxScheme إلزامي في PartyTaxScheme و CompanyID اختياري) بدل Party فارغ
   const buyerParty =
-    `${buyerAddress}${buyerTax}${buyerName}` ||
+    `${buyerId}${buyerAddress}${buyerTax}${buyerName}` ||
     `
             <cac:PartyTaxScheme>
                 <cac:TaxScheme>

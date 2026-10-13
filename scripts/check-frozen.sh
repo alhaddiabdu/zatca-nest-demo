@@ -10,6 +10,7 @@
 # الاستثناءات الحالية:
 # - invoice-builder.ts: سطر وقت QR (UTC ينتهي بـ Z)
 # - invoice-builder.ts: AccountingCustomerParty بدون بيانات مشترٍ لا يكون فارغاً (BR-KSA-F-03)
+# - invoice-builder.ts + invoice.types.ts: معرّف المشتري البديل PartyIdentification ورفض القياسية بدونه (BR-KSA-81)
 set -u
 
 BASELINE=ea4af78

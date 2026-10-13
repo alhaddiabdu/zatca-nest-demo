@@ -76,3 +76,36 @@ describe('BR-KSA-F-03: no empty elements', () => {
     expect(party).toContain('<cbc:RegistrationName>عميل</cbc:RegistrationName>');
   });
 });
+
+describe('BR-KSA-81: alternative buyer identifier', () => {
+  const noVat = { name: 'مشترٍ', address: ADDRESS };
+
+  it.each(['invoice', 'credit', 'debit'] as const)('standard %s without VAT number or other ID is rejected before signing', (kind) => {
+    const notes = kind === 'invoice' ? {} : { originalInvoiceId: 'T-0', reason: 'تعديل' };
+    expect(() => buildInvoiceXml(input({ category: 'standard', kind, buyer: noVat, ...notes }), seller)).toThrow(
+      'الفاتورة القياسية وإشعاراتها تتطلب رقماً ضريبياً للمشتري، أو معرّفاً بديلاً',
+    );
+  });
+
+  it('standard without VAT number but with NAT id → PartyIdentification first in the party', () => {
+    const xml = buildInvoiceXml(
+      input({ category: 'standard', buyer: { ...noVat, otherIdType: 'NAT', otherIdValue: '1012345678' } }),
+      seller,
+    ).unsignedXml;
+    const party = customerParty(xml).replace(/\s+/g, '');
+    expect(party).toMatch(/^<cac:AccountingCustomerParty><cac:Party><cac:PartyIdentification><cbc:IDschemeID="NAT">1012345678<\/cbc:ID><\/cac:PartyIdentification><cac:PostalAddress>/);
+    expect(party).not.toContain('CompanyID');
+  });
+
+  it('standard with VAT number needs no other id', () => {
+    const xml = buildInvoiceXml(input({ category: 'standard', buyer: { ...noVat, vatNumber: '300000000000003' } }), seller).unsignedXml;
+    expect(customerParty(xml)).not.toContain('PartyIdentification');
+  });
+
+  it('rejects an unknown scheme or a non-alphanumeric value', () => {
+    const bad = (otherIdType: string, otherIdValue: string) => () =>
+      buildInvoiceXml(input({ category: 'standard', buyer: { ...noVat, otherIdType: otherIdType as 'NAT', otherIdValue } }), seller);
+    expect(bad('XYZ', '123')).toThrow('معرّف المشتري البديل غير صالح');
+    expect(bad('CRN', '10-10')).toThrow('معرّف المشتري البديل غير صالح');
+  });
+});

@@ -24,9 +24,16 @@ export interface Address {
   countryCode?: string;
 }
 
+/** أنواع معرّف المشتري البديل في PartyIdentification/cbc:ID@schemeID (BR-KSA-81) */
+export const BUYER_ID_SCHEMES = ['TIN', 'CRN', 'MOM', 'MLS', '700', 'SAG', 'NAT', 'GCC', 'IQA', 'PAS', 'OTH'] as const;
+export type BuyerIdScheme = (typeof BUYER_ID_SCHEMES)[number];
+
 export interface Buyer {
   name: string;
   vatNumber?: string;
+  /** معرّف بديل، إلزامي في القياسية إن لم يوجد رقم ضريبي (BR-KSA-81) */
+  otherIdType?: BuyerIdScheme;
+  otherIdValue?: string; // أحرف وأرقام فقط
   address?: Address;
 }
 
