@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { api, ApiError } from './api';
-import { CATEGORY_LABELS, formatDate, formatMoney, KIND_LABELS, STATUS_LABELS, STATUS_TONES } from './format';
+import { CATEGORY_LABELS, formatIssueTime, formatMoney, KIND_LABELS, STATUS_LABELS, STATUS_TONES } from './format';
 import type { Category, InvoiceQuery, InvoiceStatus, InvoiceSummary, Kind, Page } from './types';
 
 export const PAGE_SIZE = 20;
@@ -190,7 +190,7 @@ export function InvoiceTableView({ page, selectedId, onOpen, onNote, onPage }: V
                   <span className={`badge ${STATUS_TONES[h.status]}`} data-row-status={h.status}>{STATUS_LABELS[h.status]}</span>
                   {h.status === 'PENDING' && h.attempts > 0 && <small className="row-note"> محاولة {h.attempts}</small>}
                 </td>
-                <td>{formatDate(h.createdAt)}</td>
+                <td>{formatIssueTime(h.issueDate, h.issueTime)}</td>
                 <td className="row-actions" onClick={(e) => e.stopPropagation()}>
                   <a href={api.xmlUrl(h.id)} target="_blank" rel="noreferrer">XML</a>
                   {!h.isDryRun && h.kind === 'invoice' && h.status !== 'REJECTED' && (

@@ -13,7 +13,8 @@ import { MODE_META } from './modes/active-env';
 import { generateKeyAndCsr } from './crypto/csr';
 import { certBase64ToPem, tokenToCertBase64 } from './crypto/certificate';
 import { INITIAL_PIH, signInvoice } from './crypto/signer';
-import { buildInvoiceXml, riyadhDateTime } from './xml/invoice-builder';
+import { utcIssueDateTime } from './issue-time';
+import { buildInvoiceXml } from './xml/invoice-builder';
 import { DocumentKind, InvoiceCategory } from './xml/invoice.types';
 
 /** في بوابة المطورين يعمل أي OTP، فيُرسل هذا تلقائياً */
@@ -164,7 +165,7 @@ export class OnboardingService {
     for (const category of categories) {
       for (const kind of kinds) {
         icv += 1;
-        const { date, time } = riyadhDateTime();
+        const { date, time } = utcIssueDateTime();
         const uuid = randomUUID();
         const built = buildInvoiceXml(
           {

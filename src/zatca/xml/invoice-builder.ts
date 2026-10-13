@@ -215,7 +215,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
     qrFields: {
       sellerName: seller.name,
       vatNumber: seller.vatNumber,
-      timestamp: `${input.issueDate}T${input.issueTime}`, // نفس IssueTime حرفياً (توقيت الرياض بدون Z)
+      timestamp: `${input.issueDate}T${input.issueTime}`, // IssueDate + "T" + IssueTime حرفياً: UTC ينتهي بـ Z (issue-time.ts)
       totalWithVat: money(total),
       vatTotal: money(vat),
     },

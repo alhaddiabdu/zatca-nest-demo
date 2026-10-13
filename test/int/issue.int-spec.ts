@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
+import { decodeQr } from '../../src/zatca/crypto/qr';
 import { createTestApp } from './app';
 import { resetDatabase } from './helpers';
 
@@ -38,6 +39,15 @@ describe('POST /zatca/invoices → PostgreSQL (fake transport)', () => {
     expect(r.submitted_at).not.toBeNull();
     expect(r.next_retry_at).toBeNull();
     expect(r.zatca_response.reportingStatus).toBe('REPORTED');
+  });
+
+  it('stores UTC IssueTime (HH:mm:ssZ) and QR tag 3 = IssueDate + "T" + IssueTime', async () => {
+    const r = await row('INV-1');
+    expect(r.issue_time).toMatch(/^\d{2}:\d{2}:\d{2}Z$/);
+    const xmlDate = r.signed_xml.match(/<cbc:IssueDate>([^<]+)</)[1];
+    const xmlTime = r.signed_xml.match(/<cbc:IssueTime>([^<]+)</)[1];
+    expect(xmlTime).toBe(r.issue_time);
+    expect(decodeQr(r.qr)[3]).toBe(`${xmlDate}T${xmlTime}`);
   });
 
   it('standard → ACCEPTED via clearance, cleared_xml saved', async () => {

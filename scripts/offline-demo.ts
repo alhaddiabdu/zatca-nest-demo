@@ -13,7 +13,8 @@ import { generateKeyAndCsr } from '../src/zatca/crypto/csr';
 import { pemToCertBase64 } from '../src/zatca/crypto/certificate';
 import { INITIAL_PIH, signInvoice } from '../src/zatca/crypto/signer';
 import { decodeQr } from '../src/zatca/crypto/qr';
-import { buildInvoiceXml, riyadhDateTime } from '../src/zatca/xml/invoice-builder';
+import { utcIssueDateTime } from '../src/zatca/issue-time';
+import { buildInvoiceXml } from '../src/zatca/xml/invoice-builder';
 import { InvoiceInput } from '../src/zatca/xml/invoice.types';
 import { SellerInfo } from '../src/zatca/zatca.config';
 
@@ -64,7 +65,7 @@ const certBase64 = pemToCertBase64(certPem);
 console.log('✔ تم إنشاء شهادة تجريبية محلية');
 
 // 3) سلسلة من 3 وثائق
-const { date, time } = riyadhDateTime();
+const { date, time } = utcIssueDateTime();
 const docs: Array<Omit<InvoiceInput, 'icv' | 'pih' | 'uuid' | 'issueDate' | 'issueTime'> & { file: string }> = [
   {
     file: '01-simplified-invoice.xml',

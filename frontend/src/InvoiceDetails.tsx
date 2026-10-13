@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from './api';
-import { CATEGORY_LABELS, formatDate, formatMoney, KIND_LABELS, STATUS_LABELS, STATUS_TONES } from './format';
+import { CATEGORY_LABELS, formatDate, formatIssueTime, formatMoney, KIND_LABELS, STATUS_LABELS, STATUS_TONES } from './format';
 import { QrFigure, ZatcaMessages } from './InvoiceResult';
 import type { InvoiceDetail } from './types';
 
@@ -110,7 +110,10 @@ export function InvoiceDetailsView({ detail, tab, onTab, xml }: ViewProps) {
             {detail.reason && <div><dt>السبب</dt><dd>{detail.reason}</dd></div>}
             <div><dt>العداد (ICV)</dt><dd dir="ltr">{detail.icv ?? '— (تجربة)'}</dd></div>
             {detail.submissionChannel && <div><dt>القناة</dt><dd>{detail.submissionChannel === 'clearance' ? 'اعتماد' : 'إبلاغ'}</dd></div>}
-            <div><dt>الإصدار</dt><dd>{formatDate(detail.createdAt)}</dd></div>
+            <div>
+              <dt>وقت الإصدار (الرياض)</dt>
+              <dd title={`IssueDate ${detail.issueDate} — IssueTime ${detail.issueTime}`}>{formatIssueTime(detail.issueDate, detail.issueTime)}</dd>
+            </div>
             {detail.submittedAt && <div><dt>رد الهيئة</dt><dd>{formatDate(detail.submittedAt)}</dd></div>}
             <div><dt>UUID</dt><dd dir="ltr" className="mono">{detail.uuid}</dd></div>
             <div><dt>التجزئة</dt><dd dir="ltr" className="mono">{detail.invoiceHash}</dd></div>

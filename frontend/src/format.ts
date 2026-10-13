@@ -65,7 +65,21 @@ const money = new Intl.NumberFormat('ar-SA-u-nu-latn', { minimumFractionDigits: 
 
 export const formatMoney = (n: number) => `${money.format(n)} ر.س`;
 
+/** كل الأوقات تُعرض بتوقيت الرياض مهما كانت منطقة جهاز المستخدم */
+export const RIYADH_TZ = 'Asia/Riyadh';
+
 export const formatDate = (iso: string) =>
-  new Date(iso).toLocaleString('ar-SA-u-nu-latn-ca-gregory', { dateStyle: 'medium', timeStyle: 'short' });
+  new Date(iso).toLocaleString('ar-SA-u-nu-latn-ca-gregory', { dateStyle: 'medium', timeStyle: 'short', timeZone: RIYADH_TZ });
+
+/**
+ * وقت إصدار الفاتورة (IssueDate + IssueTime) بتوقيت الرياض.
+ * الجديد بتوقيت UTC وينتهي بـ Z، والفواتير القديمة HH:mm:ss بتوقيت الرياض أصلاً.
+ */
+export const formatIssueTime = (issueDate: string, issueTime: string) => {
+  const iso = `${issueDate}T${issueTime.endsWith('Z') ? issueTime : `${issueTime}+03:00`}`;
+  return new Date(iso).toLocaleString('ar-SA-u-nu-latn-ca-gregory', {
+    dateStyle: 'medium', timeStyle: 'medium', timeZone: RIYADH_TZ,
+  });
+};
 
 export const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;

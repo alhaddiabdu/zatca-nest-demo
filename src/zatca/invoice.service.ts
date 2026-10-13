@@ -9,7 +9,8 @@ import { Credentials, ZatcaApi } from './api/zatca-api.port';
 import { createSelfSignedCert, generateKeyAndCsr } from './crypto/csr';
 import { pemToCertBase64, tokenToCertBase64 } from './crypto/certificate';
 import { signInvoice } from './crypto/signer';
-import { buildInvoiceXml, riyadhDateTime } from './xml/invoice-builder';
+import { utcIssueDateTime } from './issue-time';
+import { buildInvoiceXml } from './xml/invoice-builder';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { EnvironmentsService } from './environments/environments.service';
 import { ModeService } from './modes/mode.service';
@@ -43,7 +44,7 @@ export class InvoiceService {
     const seller = this.environments.toSeller(row);
     const signer = dryRun ? await this.localSigner(env) : await this.productionSigner(env);
     const uuid = randomUUID();
-    const { date, time } = riyadhDateTime();
+    const { date, time } = utcIssueDateTime();
 
     // 6+7+8+9) بناء XML ثم التجزئة والتوقيع و QR (الدوال المجمّدة كما هي)
     const buildAndSign = (icv: number, pih: string) => {

@@ -65,8 +65,8 @@ export class InvoiceEntity {
   @Column({ name: 'issue_date', type: 'date' })
   issueDate: string;
 
-  /** HH:mm:ss كما في XML */
-  @Column({ name: 'issue_time', type: 'varchar', length: 8 })
+  /** HH:mm:ssZ بتوقيت UTC كما في XML (الفواتير القديمة: HH:mm:ss بتوقيت الرياض) */
+  @Column({ name: 'issue_time', type: 'varchar', length: 9 })
   issueTime: string;
 
   @Column({ name: 'buyer', type: 'jsonb', nullable: true })
