@@ -10,8 +10,6 @@ services:
       PORT: 3000
       # داخل الشبكة: المضيف postgres والمنفذ 5432 (يتجاوز قيمة DATABASE_URL المحلية في .env)
       DATABASE_URL: postgres://${POSTGRES_USER:-zatca}:${POSTGRES_PASSWORD:-zatca_dev_only}@postgres:5432/${POSTGRES_DB:-zatca}
-      # fake = لا اتصال بالهيئة (الافتراضي)، live = الاتصال الحقيقي
-      ZATCA_TRANSPORT: ${ZATCA_TRANSPORT:-fake}
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,7 +1,5 @@
 import { parseMasterKey } from '../security/crypto-box.service';
 
-export type ZatcaTransport = 'fake' | 'live';
-
 /**
  * يُستدعى من ConfigModule عند الإقلاع. أي متغير ناقص أو غير صالح يوقف التشغيل
  * برسالة تذكر كل المشاكل مرة واحدة. لا تُطبع قيم الأسرار.
@@ -23,13 +21,8 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
     errors.push('DATABASE_URL يجب أن يبدأ بـ postgres:// أو postgresql://');
   }
 
-  const transport = (config.ZATCA_TRANSPORT as string | undefined) ?? 'fake';
-  if (transport !== 'fake' && transport !== 'live') {
-    errors.push(`ZATCA_TRANSPORT يجب أن يكون fake أو live (القيمة الحالية: ${transport})`);
-  }
-
   if (errors.length) {
     throw new Error(`إعدادات البيئة غير صالحة، لا يمكن التشغيل:\n- ${errors.join('\n- ')}`);
   }
-  return { ...config, ZATCA_TRANSPORT: transport };
+  return config;
 }

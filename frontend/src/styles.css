@@ -128,6 +128,9 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem
 .mode-stats dt { color: var(--muted); font-size: 0.8rem; }
 .mode-stats dd { margin: 0; font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .mode-current { align-self: flex-start; font-size: 0.8rem; font-weight: 600; color: var(--card-mode); background: var(--card-mode-soft); padding: 2px 10px; border-radius: 999px; }
+/* وضع معطّل حالياً (الإنتاج): باهت وغير قابل للضغط */
+.mode-card.unavailable { opacity: 0.5; filter: grayscale(0.6); pointer-events: none; user-select: none; }
+.mode-card.unavailable .mode-choose { cursor: not-allowed; }
 .mode-card .mode-choose { background: var(--card-mode); }
 .mode-card .mode-choose:hover:not(:disabled) { background: var(--card-mode); filter: brightness(0.92); }
 @media (max-width: 760px) {

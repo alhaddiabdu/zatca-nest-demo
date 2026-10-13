@@ -1,11 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ComplianceCheckEntity } from '../database/entities/compliance-check.entity';
 import { InvoiceEntity } from '../database/entities/invoice.entity';
 import { ZatcaApi } from './api/zatca-api.port';
 import { ZatcaApiService } from './api/zatca-api.service';
-import { FakeZatcaApiService } from './api/fake-zatca-api.service';
 import { EnvironmentsModule } from './environments/environments.module';
 import { ModesModule } from './modes/modes.module';
 import { OnboardingService } from './onboarding.service';
@@ -25,13 +23,8 @@ import { InvoicesService } from './invoices/invoices.service';
   ],
   controllers: [ZatcaController, InvoicesController],
   providers: [
-    {
-      // live = الاتصال الحقيقي بالهيئة، fake = ردود محلية (الافتراضي)
-      provide: ZatcaApi,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) =>
-        config.get<string>('ZATCA_TRANSPORT') === 'live' ? new ZatcaApiService() : new FakeZatcaApiService(),
-    },
+    // الاتصال الحقيقي بالهيئة دائماً. الناقل الوهمي تحقنه الاختبارات الآلية فقط (overrideProvider)
+    { provide: ZatcaApi, useClass: ZatcaApiService },
     OnboardingService,
     InvoiceService,
     ChainService,

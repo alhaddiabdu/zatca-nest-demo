@@ -8,9 +8,8 @@ const good = {
 };
 
 describe('validateEnv', () => {
-  it('accepts valid values and defaults ZATCA_TRANSPORT to fake', () => {
-    expect(validateEnv({ ...good })).toMatchObject({ ZATCA_TRANSPORT: 'fake' });
-    expect(validateEnv({ ...good, ZATCA_TRANSPORT: 'live' })).toMatchObject({ ZATCA_TRANSPORT: 'live' });
+  it('accepts valid values', () => {
+    expect(validateEnv({ ...good })).toEqual(good);
   });
 
   it('rejects a missing MASTER_KEY', () => {
@@ -27,20 +26,15 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...good, DATABASE_URL: 'mysql://x' })).toThrow('postgres://');
   });
 
-  it('rejects an unknown ZATCA_TRANSPORT', () => {
-    expect(() => validateEnv({ ...good, ZATCA_TRANSPORT: 'real' })).toThrow('ZATCA_TRANSPORT');
-  });
-
   it('lists every problem at once and never prints the key', () => {
     const badKey = randomBytes(16).toString('base64');
     try {
-      validateEnv({ MASTER_KEY: badKey, ZATCA_TRANSPORT: 'x' });
+      validateEnv({ MASTER_KEY: badKey });
       throw new Error('should have failed');
     } catch (e) {
       const msg = (e as Error).message;
       expect(msg).toContain('MASTER_KEY');
       expect(msg).toContain('DATABASE_URL');
-      expect(msg).toContain('ZATCA_TRANSPORT');
       expect(msg).not.toContain(badKey);
     }
   });

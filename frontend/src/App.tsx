@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from './api';
-import { MODE_COLORS } from './format';
+import { DISABLED_MODES, MODE_COLORS } from './format';
 import { InvoiceForm, Prefill } from './InvoiceForm';
 import { InvoiceResult } from './InvoiceResult';
 import { Onboarding } from './Onboarding';
@@ -32,7 +32,9 @@ export function App() {
   /** يحدد الشاشة من الخادم: البطاقات ← الإعدادات ← التسجيل ← لوحة التحكم */
   const resolveScreen = useCallback(async () => {
     try {
-      const { active: mode } = await api.mode();
+      const { active: saved } = await api.mode();
+      // وضع محفوظ ثم عُطّل (الإنتاج): نعيد المستخدم لشاشة الاختيار
+      const mode = saved && DISABLED_MODES.includes(saved) ? null : saved;
       setActive(mode);
       if (!mode) {
         setStatus(null);

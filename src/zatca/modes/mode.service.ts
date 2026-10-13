@@ -5,13 +5,21 @@ import { AppSettingsEntity } from '../../database/entities/app-settings.entity';
 import { ZatcaEnvName } from '../../database/entities/environment.entity';
 import { InvoiceEntity } from '../../database/entities/invoice.entity';
 import { EnvironmentsService, EnvState, isZatcaEnv } from '../environments/environments.service';
-import { CORE_CONFIRMATION, MODE_META } from './active-env';
+import { CORE_CONFIRMATION, isModeAvailable, MODE_META } from './active-env';
+
+const modeDisabled = (mode: ZatcaEnvName, Exception: typeof BadRequestException | typeof ConflictException) =>
+  new Exception({
+    code: 'MODE_DISABLED',
+    message: `وضع ${MODE_META[mode].label} غير متاح حالياً. استخدم بوابة المطورين أو المحاكاة.`,
+  });
 
 export interface ModeInfo {
   env: ZatcaEnvName;
   label: string;
   color: string;
   state: EnvState;
+  /** false = الوضع معطّل حالياً ولا يمكن اختياره */
+  available: boolean;
   onboardedAt: Date | null;
   invoiceCount: number;
   pendingCount: number;
@@ -33,6 +41,8 @@ export class ModeService {
   /** الوضع الذي تعمل عليه العمليات، أو 409 إن لم يُختر (تعرض الواجهة شاشة الاختيار) */
   async requireActive(): Promise<ZatcaEnvName> {
     const active = await this.getActive();
+    // وضع محفوظ من قبل تعطيله (الإنتاج) لا تعمل عليه أي عملية
+    if (active && !isModeAvailable(active)) throw modeDisabled(active, ConflictException);
     if (active) return active;
     throw new ConflictException({ code: 'NO_ACTIVE_MODE', message: 'لم يُختر وضع تشغيل بعد. اختر الوضع أولاً.' });
   }
@@ -41,6 +51,7 @@ export class ModeService {
     if (!isZatcaEnv(mode)) {
       throw new BadRequestException({ code: 'UNKNOWN_MODE', message: `وضع غير معروف: ${mode}` });
     }
+    if (!isModeAvailable(mode)) throw modeDisabled(mode, BadRequestException);
     if (mode === 'core' && confirm !== CORE_CONFIRMATION) {
       throw new BadRequestException({
         code: 'CORE_CONFIRMATION_REQUIRED',
@@ -73,6 +84,7 @@ export class ModeService {
         env: row.env,
         ...MODE_META[row.env],
         state: this.environments.state(row),
+        available: isModeAvailable(row.env),
         onboardedAt: row.onboardedAt,
         invoiceCount: byEnv.get(row.env)?.invoiceCount ?? 0,
         pendingCount: byEnv.get(row.env)?.pendingCount ?? 0,

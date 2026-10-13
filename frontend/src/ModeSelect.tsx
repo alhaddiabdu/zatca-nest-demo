@@ -69,7 +69,11 @@ export function ModeSelect({ onSelected }: Props) {
       {modes && (
         <div className="mode-cards">
           {modes.map((m) => (
-            <article key={m.env} className={`card mode-card mode-${MODE_COLORS[m.env]}${m.env === active ? ' active' : ''}`}>
+            <article
+              key={m.env}
+              className={`card mode-card mode-${MODE_COLORS[m.env]}${m.env === active ? ' active' : ''}${m.available ? '' : ' unavailable'}`}
+              aria-disabled={!m.available}
+            >
               <div className="card-head">
                 <h3>{m.label}</h3>
                 <span className={`badge ${MODE_STATE_TONES[m.state]}`}>{MODE_STATE_LABELS[m.state]}</span>
@@ -83,10 +87,10 @@ export function ModeSelect({ onSelected }: Props) {
               <button
                 type="button"
                 className="btn primary mode-choose"
-                disabled={busy !== null}
-                onClick={() => choose(m.env)}
+                disabled={busy !== null || !m.available}
+                onClick={() => m.available && choose(m.env)}
               >
-                {busy === m.env ? 'جارٍ التفعيل…' : 'اختيار'}
+                {!m.available ? 'غير متاح حالياً' : busy === m.env ? 'جارٍ التفعيل…' : 'اختيار'}
               </button>
             </article>
           ))}

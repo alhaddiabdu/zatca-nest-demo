@@ -9,7 +9,8 @@ import { ZatcaEnv } from '../zatca.config';
 import { Credentials, CsidResponse, SubmitBody, ZatcaApi, ZatcaResponse } from './zatca-api.port';
 
 /**
- * ناقل وهمي لمنصة فاتورة (ZATCA_TRANSPORT=fake): لا يتصل بأي خادم.
+ * ناقل وهمي لمنصة فاتورة للاختبارات الآلية فقط: لا يتصل بأي خادم،
+ * ولا يمكن تفعيله أثناء التشغيل (الاختبارات تحقنه بـ overrideProvider(ZatcaApi)).
  *
  * - ينشئ جهة إصدار (CA) محلية عند بدء التشغيل، ويوقّع بها الـ CSR المستلم،
  *   فتكون الشهادة لنفس مفتاح الـ EGS ويعمل التوقيع والتحقق كما هما.
@@ -35,7 +36,7 @@ export class FakeZatcaApiService implements ZatcaApi, OnModuleDestroy {
       'req', '-new', '-x509', '-sha256', '-days', '3650', '-key', key,
       '-subj', '/CN=Fake ZATCA Local CA/O=Local Development/C=SA', '-out', join(this.caDir, 'ca.pem'),
     ]);
-    this.logger.warn('ZATCA_TRANSPORT=fake: لا اتصال بالهيئة، كل الردود محلية للتجربة فقط');
+    this.logger.warn('ناقل وهمي (اختبارات): لا اتصال بالهيئة، كل الردود محلية');
   }
 
   setOutage(on: boolean) {

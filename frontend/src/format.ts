@@ -13,6 +13,9 @@ export const MODE_COLORS: Record<Mode, ModeColor> = {
   core: 'red',
 };
 
+/** الأوضاع المعطّلة حالياً (مطابقة للخادم): بطاقتها باهتة وغير قابلة للاختيار */
+export const DISABLED_MODES: readonly Mode[] = ['core'];
+
 export const MODE_DESCRIPTIONS: Record<Mode, string> = {
   'developer-portal': 'تجربة حرة بإعدادات تجريبية جاهزة، و OTP يُرسل تلقائياً',
   simulation: 'بيانات المنشأة الحقيقية دون أثر رسمي، و OTP من بوابة فاتورة (المحاكاة)',

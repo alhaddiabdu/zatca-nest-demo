@@ -38,6 +38,8 @@ export interface ModeInfo {
   label: string;
   color: ModeColor;
   state: ModeState;
+  /** false = الوضع معطّل حالياً (الإنتاج) ولا يمكن اختياره */
+  available: boolean;
   onboardedAt: string | null;
   invoiceCount: number;
   pendingCount: number;

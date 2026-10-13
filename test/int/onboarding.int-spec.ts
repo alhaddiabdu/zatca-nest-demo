@@ -22,7 +22,10 @@ describe('POST /zatca/onboard (PostgreSQL + fake transport)', () => {
     delete process.env.ZATCA_ENV;
     const moduleRef = await Test.createTestingModule({
       imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), DatabaseModule, ZatcaModule],
-    }).compile();
+    })
+      .overrideProvider(ZatcaApi)
+      .useClass(FakeZatcaApiService)
+      .compile();
     app = moduleRef.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();

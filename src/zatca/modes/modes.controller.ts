@@ -17,7 +17,7 @@ export class ModesController {
     return { active: await this.modes.getActive() };
   }
 
-  /** التحويل إلى core يتطلب confirm: "CORE" */
+  /** core معطّل حالياً ويُرفض بـ MODE_DISABLED */
   @Put('mode')
   set(@Body() dto: SetModeDto) {
     return this.modes.setMode(dto.mode, dto.confirm);

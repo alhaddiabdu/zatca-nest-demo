@@ -14,6 +14,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   NO_ACTIVE_MODE: 'لم يُختر وضع تشغيل بعد. اختر الوضع أولاً.',
   CORE_CONFIRMATION_REQUIRED: 'لتفعيل الإنتاج اكتب CORE حرفياً.',
   UNKNOWN_MODE: 'وضع غير معروف.',
+  MODE_DISABLED: 'وضع الإنتاج غير متاح حالياً.',
   SETTINGS_INCOMPLETE: 'أكمل إعدادات المنشأة قبل التسجيل.',
   OTP_REQUIRED: 'أدخل رمز OTP من بوابة فاتورة.',
   PENDING_EXISTS: 'توجد فواتير معلّقة في هذا الوضع. أرسلها أولاً قبل إعادة التسجيل.',

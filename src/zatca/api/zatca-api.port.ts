@@ -29,8 +29,8 @@ export interface ZatcaResponse<T = any> {
 
 /**
  * واجهة الاتصال بمنصة فاتورة. لها تنفيذان:
- * - ZatcaApiService: الاتصال الحقيقي بالهيئة (ZATCA_TRANSPORT=live)
- * - FakeZatcaApiService: ردود محلية للتطوير والاختبار (ZATCA_TRANSPORT=fake)
+ * - ZatcaApiService: الاتصال الحقيقي بالهيئة (المستخدم دائماً أثناء التشغيل)
+ * - FakeZatcaApiService: ردود محلية للاختبارات الآلية فقط (تحقنه بـ overrideProvider)
  * تُستخدم كرمز حقن في Nest.
  */
 export abstract class ZatcaApi {

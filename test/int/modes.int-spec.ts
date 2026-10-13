@@ -41,23 +41,24 @@ describe('Operating modes: /zatca/modes and /zatca/mode', () => {
       ['core', 'unconfigured', 'red'],
     ]);
     expect(body.modes.every((m: { invoiceCount: number }) => m.invoiceCount === 0)).toBe(true);
+    expect(body.modes.map((m: { available: boolean }) => m.available)).toEqual([true, true, false]);
   });
 
-  it('core without confirm → 400', async () => {
-    const { body } = await http().put('/zatca/mode').send({ mode: 'core' }).expect(400);
-    expect(body.code).toBe('CORE_CONFIRMATION_REQUIRED');
-  });
+  describe('core is disabled', () => {
+    it.each([undefined, 'core', 'CORE'])('PUT core (confirm=%s) → 400 MODE_DISABLED, nothing stored', async (confirm) => {
+      const { body } = await http().put('/zatca/mode').send({ mode: 'core', confirm }).expect(400);
+      expect(body.code).toBe('MODE_DISABLED');
+      expect(body.message).toContain('غير متاح حالياً');
+      expect((await http().get('/zatca/mode')).body).toEqual({ active: null });
+      const [row] = await ds.query('select core_confirmed_at from app_settings where id = 1');
+      expect(row.core_confirmed_at).toBeNull();
+    });
 
-  it('core with confirm "core" → 400 (must be exact)', async () => {
-    await http().put('/zatca/mode').send({ mode: 'core', confirm: 'core' }).expect(400);
-    await http().put('/zatca/mode').send({ mode: 'core', confirm: 'CORE ' }).expect(400);
-  });
-
-  it('core with confirm "CORE" → 200 and records the confirmation time', async () => {
-    expect((await http().put('/zatca/mode').send({ mode: 'core', confirm: 'CORE' }).expect(200)).body).toEqual({ active: 'core' });
-    expect((await http().get('/zatca/mode')).body).toEqual({ active: 'core' });
-    const [row] = await ds.query('select core_confirmed_at from app_settings where id = 1');
-    expect(row.core_confirmed_at).not.toBeNull();
+    it('a core mode stored before disabling blocks operations with 409 MODE_DISABLED', async () => {
+      await ds.query(`update app_settings set active_env = 'core'`);
+      await expect(modes.requireActive()).rejects.toMatchObject({ status: 409, response: { code: 'MODE_DISABLED' } });
+      await ds.query('update app_settings set active_env = null');
+    });
   });
 
   it('unknown mode → 400', async () => {
