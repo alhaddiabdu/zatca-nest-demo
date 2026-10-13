@@ -1,16 +1,17 @@
 diff --git a/src/zatca/xml/invoice-builder.ts b/src/zatca/xml/invoice-builder.ts
-index 0f035cd..d41a035 100644
+index 0f035cd..95263f0 100644
 --- a/src/zatca/xml/invoice-builder.ts
 +++ b/src/zatca/xml/invoice-builder.ts
-@@ -1,6 +1,6 @@
+@@ -1,6 +1,7 @@
  import { SellerInfo } from '../zatca.config';
++import { lineNet, priceText } from '../amounts';
  import { escapeXml, QR_PLACEHOLDER, QrFields, UBL_EXTENSIONS_PLACEHOLDER } from '../crypto/signer';
 -import { CATEGORY_SUBTYPES, DOCUMENT_TYPE_CODES, InvoiceInput } from './invoice.types';
 +import { BUYER_ID_SCHEMES, CATEGORY_SUBTYPES, DOCUMENT_TYPE_CODES, InvoiceInput } from './invoice.types';
  
  const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
  const money = (n: number) => round2(n).toFixed(2);
-@@ -23,6 +23,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -23,6 +24,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
    if (input.category === 'standard' && !input.buyer?.address) {
      throw new Error('الفاتورة القياسية تتطلب اسم المشتري وعنوانه');
    }
@@ -27,7 +28,16 @@ index 0f035cd..d41a035 100644
    if (input.kind !== 'invoice' && (!input.originalInvoiceId || !input.reason)) {
      throw new Error('الإشعار الدائن/المدين يتطلب رقم الفاتورة الأصلية وسبب الإشعار');
    }
-@@ -54,6 +64,12 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -30,7 +41,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+   // ===== الحسابات =====
+   const lines = input.lines.map((l, idx) => {
+     const rate = l.vatPercent ?? 15;
+-    const net = round2(l.quantity * l.unitPrice);
++    const net = lineNet(l.quantity, l.unitPrice); // BR-KSA-EN16931-11: الكمية × السعر بدقة عشرية ثم خانتان
+     const vat = round2((net * rate) / 100);
+     return { ...l, idx: idx + 1, rate, net, vat };
+   });
+@@ -54,6 +65,12 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
        : '';
  
    const buyer = input.buyer;
@@ -40,7 +50,7 @@ index 0f035cd..d41a035 100644
    const buyerAddress = buyer?.address
      ? `
              <cac:PostalAddress>
-@@ -82,6 +98,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -82,6 +99,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
                  <cbc:RegistrationName>${e(buyer.name)}</cbc:RegistrationName>
              </cac:PartyLegalEntity>`
      : '';
@@ -57,7 +67,16 @@ index 0f035cd..d41a035 100644
  
    const instructionNote =
      input.kind !== 'invoice'
-@@ -174,7 +200,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -111,7 +138,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+             </cac:ClassifiedTaxCategory>
+         </cac:Item>
+         <cac:Price>
+-            <cbc:PriceAmount currencyID="SAR">${money(l.unitPrice)}</cbc:PriceAmount>
++            <cbc:PriceAmount currencyID="SAR">${priceText(l.unitPrice)}</cbc:PriceAmount>
+         </cac:Price>
+     </cac:InvoiceLine>`,
+     )
+@@ -174,7 +201,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
          </cac:Party>
      </cac:AccountingSupplierParty>
      <cac:AccountingCustomerParty>
@@ -66,7 +85,7 @@ index 0f035cd..d41a035 100644
          </cac:Party>
      </cac:AccountingCustomerParty>
      <cac:Delivery>
-@@ -215,7 +241,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
+@@ -215,7 +242,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
      qrFields: {
        sellerName: seller.name,
        vatNumber: seller.vatNumber,

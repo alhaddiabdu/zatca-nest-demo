@@ -109,3 +109,28 @@ describe('BR-KSA-81: alternative buyer identifier', () => {
     expect(bad('CRN', '10-10')).toThrow('معرّف المشتري البديل غير صالح');
   });
 });
+
+describe('BR-KSA-EN16931-11: unit price as entered, line net = quantity × price', () => {
+  const line = (xml: string) => ({
+    price: xml.match(/<cbc:PriceAmount currencyID="SAR">([^<]+)</)![1],
+    net: xml.match(/<cac:InvoiceLine>[\s\S]*?<cbc:LineExtensionAmount currencyID="SAR">([^<]+)</)![1],
+  });
+
+  it('price 10.005 × quantity 3 → PriceAmount 10.005 unrounded, line net 30.02', () => {
+    const built = buildInvoiceXml(input({ lines: [{ name: 'منتج', quantity: 3, unitPrice: 10.005 }] }), seller);
+    expect(line(built.unsignedXml)).toEqual({ price: '10.005', net: '30.02' });
+    // 3 × 10.005 = 30.015 بالضبط (وفي JS = 30.014999999999997 فكان يُقرَّب خطأً إلى 30.01)
+    expect(built.totals).toEqual({ net: 30.02, vat: 4.5, total: 34.52 });
+  });
+
+  it.each([
+    [15, 2, '15.00', '30.00'],
+    [33.33, 3, '33.33', '99.99'],
+    [1.005, 1, '1.005', '1.01'],
+    [0.1, 3, '0.10', '0.30'],
+    [2.5, 1.5, '2.50', '3.75'],
+    [0.0000001, 1, '0.0000001', '0.00'],
+  ])('price %p × quantity %p → PriceAmount %s, net %s', (unitPrice, quantity, price, net) => {
+    expect(line(buildInvoiceXml(input({ lines: [{ name: 'منتج', quantity, unitPrice }] }), seller).unsignedXml)).toEqual({ price, net });
+  });
+});

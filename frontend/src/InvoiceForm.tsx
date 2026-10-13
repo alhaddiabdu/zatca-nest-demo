@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { api, ApiError } from './api';
-import { BUYER_ID_LABELS, CATEGORY_LABELS, formatMoney, KIND_LABELS, round2 } from './format';
+import { BUYER_ID_LABELS, CATEGORY_LABELS, formatMoney, KIND_LABELS, lineNet, round2 } from './format';
 import type { BuyerIdScheme, Category, InvoicePayload, IssueResult, Kind, Status } from './types';
 
 const VAT_RATE = 15;
@@ -81,7 +81,7 @@ export function InvoiceForm({ status, prefill, onIssued }: Props) {
   }, [prefill]);
 
   const totals = useMemo(() => {
-    const net = round2(lines.reduce((s, l) => s + round2(Number(l.quantity || 0) * Number(l.unitPrice || 0)), 0));
+    const net = round2(lines.reduce((s, l) => s + lineNet(l.quantity, l.unitPrice), 0));
     const vat = round2((net * VAT_RATE) / 100);
     return { net, vat, total: round2(net + vat) };
   }, [lines]);
@@ -299,7 +299,7 @@ export function InvoiceForm({ status, prefill, onIssued }: Props) {
               <input aria-label="الصنف" value={l.name} onChange={(e) => updateLine(l.key, { name: e.target.value })} required placeholder="اسم الصنف" />
               <input aria-label="الكمية" type="number" min="0.01" step="any" value={l.quantity} onChange={(e) => updateLine(l.key, { quantity: e.target.value })} required dir="ltr" />
               <input aria-label="سعر الوحدة" type="number" min="0" step="any" value={l.unitPrice} onChange={(e) => updateLine(l.key, { unitPrice: e.target.value })} required dir="ltr" />
-              <span className="amount">{formatMoney(round2(Number(l.quantity || 0) * Number(l.unitPrice || 0)))}</span>
+              <span className="amount">{formatMoney(lineNet(l.quantity, l.unitPrice))}</span>
               <button
                 type="button"
                 className="icon-btn"

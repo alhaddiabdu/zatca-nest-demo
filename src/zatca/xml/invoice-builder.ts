@@ -1,4 +1,5 @@
 import { SellerInfo } from '../zatca.config';
+import { lineNet, priceText } from '../amounts';
 import { escapeXml, QR_PLACEHOLDER, QrFields, UBL_EXTENSIONS_PLACEHOLDER } from '../crypto/signer';
 import { BUYER_ID_SCHEMES, CATEGORY_SUBTYPES, DOCUMENT_TYPE_CODES, InvoiceInput } from './invoice.types';
 
@@ -40,7 +41,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
   // ===== الحسابات =====
   const lines = input.lines.map((l, idx) => {
     const rate = l.vatPercent ?? 15;
-    const net = round2(l.quantity * l.unitPrice);
+    const net = lineNet(l.quantity, l.unitPrice); // BR-KSA-EN16931-11: الكمية × السعر بدقة عشرية ثم خانتان
     const vat = round2((net * rate) / 100);
     return { ...l, idx: idx + 1, rate, net, vat };
   });
@@ -137,7 +138,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
             </cac:ClassifiedTaxCategory>
         </cac:Item>
         <cac:Price>
-            <cbc:PriceAmount currencyID="SAR">${money(l.unitPrice)}</cbc:PriceAmount>
+            <cbc:PriceAmount currencyID="SAR">${priceText(l.unitPrice)}</cbc:PriceAmount>
         </cac:Price>
     </cac:InvoiceLine>`,
     )

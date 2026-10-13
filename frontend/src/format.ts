@@ -98,3 +98,23 @@ export const formatIssueTime = (issueDate: string, issueTime: string) => {
 };
 
 export const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+/**
+ * صافي البند = الكمية × السعر بدقة عشرية ثم خانتان (نصف للأعلى)، مطابق للخادم (src/zatca/amounts.ts).
+ * يأخذ النص كما كُتب في الحقل: 3 × 10.005 = 30.02 (وبأرقام JS العادية 30.01).
+ */
+export function lineNet(quantity: string, unitPrice: string): number {
+  const scaled = (s: string) => {
+    const [i = '0', f = ''] = (s.trim() || '0').replace(/^\+/, '').split('.');
+    return /^\d*$/.test(i) && /^\d*$/.test(f) ? { v: BigInt((i || '0') + f), d: f.length } : null;
+  };
+  const q = scaled(quantity);
+  const p = scaled(unitPrice);
+  // صيغة غير عادية (أسية مثلاً): تقدير تقريبي للعرض فقط
+  if (!q || !p) return round2(Number(quantity || 0) * Number(unitPrice || 0));
+  const product = q.v * p.v;
+  const d = q.d + p.d;
+  if (d <= 2) return Number(product * 10n ** BigInt(2 - d)) / 100;
+  const div = 10n ** BigInt(d - 2);
+  return Number(product / div + ((product % div) * 2n >= div ? 1n : 0n)) / 100;
+}
