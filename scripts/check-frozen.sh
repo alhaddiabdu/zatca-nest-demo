@@ -9,6 +9,7 @@
 #
 # الاستثناءات الحالية:
 # - invoice-builder.ts: سطر وقت QR (UTC ينتهي بـ Z)
+# - invoice-builder.ts: AccountingCustomerParty بدون بيانات مشترٍ لا يكون فارغاً (BR-KSA-F-03)
 set -u
 
 BASELINE=ea4af78

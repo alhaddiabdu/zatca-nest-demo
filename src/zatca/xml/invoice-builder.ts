@@ -82,6 +82,16 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
                 <cbc:RegistrationName>${e(buyer.name)}</cbc:RegistrationName>
             </cac:PartyLegalEntity>`
     : '';
+  // BR-KSA-F-03: لا عناصر فارغة. AccountingCustomerParty إلزامي في مخطط UBL 2.1، فبدون بيانات مشترٍ
+  // يُكتب نظام الضريبة فقط (TaxScheme إلزامي في PartyTaxScheme و CompanyID اختياري) بدل Party فارغ
+  const buyerParty =
+    `${buyerAddress}${buyerTax}${buyerName}` ||
+    `
+            <cac:PartyTaxScheme>
+                <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+            </cac:PartyTaxScheme>`;
 
   const instructionNote =
     input.kind !== 'invoice'
@@ -174,7 +184,7 @@ export function buildInvoiceXml(input: InvoiceInput, seller: SellerInfo): BuiltI
         </cac:Party>
     </cac:AccountingSupplierParty>
     <cac:AccountingCustomerParty>
-        <cac:Party>${buyerAddress}${buyerTax}${buyerName}
+        <cac:Party>${buyerParty}
         </cac:Party>
     </cac:AccountingCustomerParty>
     <cac:Delivery>

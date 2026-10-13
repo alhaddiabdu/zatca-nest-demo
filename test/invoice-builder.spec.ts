@@ -1,0 +1,78 @@
+import { DOMParser } from '@xmldom/xmldom';
+import { createSelfSignedCert, generateKeyAndCsr } from '../src/zatca/crypto/csr';
+import { pemToCertBase64 } from '../src/zatca/crypto/certificate';
+import { INITIAL_PIH, signInvoice } from '../src/zatca/crypto/signer';
+import { buildInvoiceXml } from '../src/zatca/xml/invoice-builder';
+import { InvoiceInput } from '../src/zatca/xml/invoice.types';
+
+const seller = {
+  name: 'شركة التجربة', vatNumber: '399999999900003', crn: '1010010000', street: 'شارع', buildingNumber: '1234',
+  district: 'حي', city: 'الرياض', postalCode: '12345',
+};
+const ADDRESS = { street: 'طريق الملك فهد', buildingNumber: '1234', district: 'العليا', city: 'الرياض', postalCode: '12211' };
+
+const input = (over: Partial<InvoiceInput> = {}): InvoiceInput => ({
+  id: 'T-1', uuid: '6f4d20e0-6bfe-4a80-9389-7dabe6620f12', category: 'simplified', kind: 'invoice',
+  issueDate: '2026-10-13', issueTime: '09:15:30Z', icv: 1, pih: INITIAL_PIH,
+  lines: [{ name: 'منتج', quantity: 1, unitPrice: 10 }],
+  ...over,
+});
+
+const { privateKeyPem } = generateKeyAndCsr({
+  commonName: 't', orgUnit: 't', orgName: 't', vatNumber: seller.vatNumber, solutionName: 't', model: 't',
+  serial: 't', invoiceType: '1100', location: 't', industry: 't', certTemplateName: 'TSTZATCA-Code-Signing',
+});
+const certBase64 = pemToCertBase64(createSelfSignedCert(privateKeyPem));
+const sign = (i: InvoiceInput) => {
+  const built = buildInvoiceXml(i, seller);
+  return { built, ...signInvoice({ unsignedXml: built.unsignedXml, privateKeyPem, certBase64, qrFields: built.qrFields }) };
+};
+
+/**
+ * المسار الكامل لكل عنصر فارغ (بلا عناصر أبناء ولا نص ولا خصائص) وكل خاصية فارغة.
+ * يُستثنى URI="" في ds:Reference للفاتورة: يفرضه XML-DSig (مرجع للمستند كله) وهو في أمثلة الهيئة نفسها.
+ */
+const SIGNED_DATA_REF_URI = /\/ds:SignedInfo\/ds:Reference\/@URI$/;
+
+function emptyNodes(xml: string): string[] {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const out: string[] = [];
+  const walk = (el: Element, path: string) => {
+    const here = `${path}/${el.nodeName}`;
+    const children = Array.from(el.childNodes);
+    const hasChildEl = children.some((n) => n.nodeType === 1);
+    const hasText = children.some((n) => (n.nodeType === 3 || n.nodeType === 4) && (n.nodeValue ?? '').trim() !== '');
+    if (!hasChildEl && !hasText && el.attributes.length === 0) out.push(here);
+    for (const a of Array.from(el.attributes)) if (a.value.trim() === '') out.push(`${here}/@${a.name}`);
+    children.filter((n): n is Element => n.nodeType === 1).forEach((c) => walk(c, here));
+  };
+  walk(doc.documentElement, '');
+  return out.filter((p) => !SIGNED_DATA_REF_URI.test(p));
+}
+
+const customerParty = (xml: string) => xml.match(/<cac:AccountingCustomerParty>[\s\S]*?<\/cac:AccountingCustomerParty>/)![0];
+
+describe('BR-KSA-F-03: no empty elements', () => {
+  it.each([
+    ['simplified invoice without buyer', input()],
+    ['simplified credit note without buyer', input({ kind: 'credit', originalInvoiceId: 'T-0', reason: 'إرجاع' })],
+    ['simplified invoice with buyer name only', input({ buyer: { name: 'عميل' } })],
+    ['standard invoice', input({ category: 'standard', buyer: { name: 'مشترٍ', vatNumber: '300000000000003', address: ADDRESS } })],
+  ])('%s: signed XML has no empty element or attribute', (_, i) => {
+    expect(emptyNodes(sign(i).signedXml)).toEqual([]);
+  });
+
+  it('simplified without buyer keeps the mandatory AccountingCustomerParty with only the VAT tax scheme', () => {
+    const party = customerParty(buildInvoiceXml(input(), seller).unsignedXml).replace(/\s+/g, '');
+    expect(party).toBe(
+      '<cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>' +
+        '</cac:PartyTaxScheme></cac:Party></cac:AccountingCustomerParty>',
+    );
+  });
+
+  it('buyer data present: no extra tax scheme block is added', () => {
+    const party = customerParty(buildInvoiceXml(input({ buyer: { name: 'عميل' } }), seller).unsignedXml);
+    expect(party).not.toContain('PartyTaxScheme');
+    expect(party).toContain('<cbc:RegistrationName>عميل</cbc:RegistrationName>');
+  });
+});
